@@ -366,15 +366,32 @@ let curDoc=null;
 function openDoc(kind,id){
   IS=invState();const m=mkDoc(kind,id);if(!m){toast('Document not found');return}curDoc={kind,id,m};const a=m.x.a;
   const extra=kind==='agreement'&&a&&a.signed!=='Signed'?`<button class="btn ghost" data-sign="${a.id}">Mark as signed</button>`:(kind==='due'||kind==='warning')&&a&&afee(a)>0?`<button class="btn ghost" data-charge="${a.id}">Charge fine AED ${fmt(afee(a))} as invoice</button>`:'';
-  $('#modal').innerHTML=`<div class="acts" style="margin:0 0 14px"><button class="btn" id="dl">Download PDF</button><a class="btn ghost wa" href="https://wa.me/${waNum(m.x.t.mobile)}?text=${encodeURIComponent(m.msg)}" target="_blank" rel="noopener">WhatsApp message</a><button class="btn ghost" id="cpy">Copy message</button>${extra}<span class="sp"></span><button class="btn ghost" id="cancel">Close</button></div>${docHTML(m)}`;
+  $('#modal').innerHTML=`<div class="acts" style="margin:0 0 14px"><button class="btn" id="shr">Send PDF (WhatsApp)</button><button class="btn ghost" id="dl">Save PDF</button><a class="btn ghost wa" href="https://wa.me/${waNum(m.x.t.mobile)}?text=${encodeURIComponent(m.msg)}" target="_blank" rel="noopener">WhatsApp message</a><button class="btn ghost" id="cpy">Copy message</button>${extra}<span class="sp"></span><button class="btn ghost" id="cancel">Close</button></div>${docHTML(m)}`;
   $('#ov').classList.add('on');cur=null;
 }
-async function download(){
-  const m=curDoc?.m;if(!m)return;const name=(m.file+'_'+(m.x.t.name||'')).replace(/[^A-Za-z0-9_-]+/g,'_').replace(/_+$/,'');
-  let data,fn;
-  if(window.jspdf){data=docPDF(m);fn=name+'.pdf'}else{data=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(m.no)}</title><style>body{margin:0;background:#fff}${SHEETCSS}@page{size:A4;margin:12mm}</style></head><body>${docHTML(m)}</body></html>`;fn=name+'.html';toast('Offline: saving as printable page')}
-  const blob=data instanceof Blob?data:new Blob([data],{type:'text/html'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=fn;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast('Downloaded '+fn)
+function mkFile(){
+  const m=curDoc?.m;if(!m)return null;const name=(m.file+'_'+(m.x.t.name||'')).replace(/[^A-Za-z0-9_-]+/g,'_').replace(/_+$/,'');
+  if(window.jspdf){const b=docPDF(m);return{m,blob:b instanceof Blob?b:new Blob([b],{type:'application/pdf'}),fn:name+'.pdf'}}
+  toast('PDF tool not loaded (offline?) - saving printable page');
+  return{m,blob:new Blob([`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(m.no)}</title><style>body{margin:0;background:#fff}${SHEETCSS}@page{size:A4;margin:12mm}</style></head><body>${docHTML(m)}</body></html>`],{type:'text/html'}),fn:name+'.html'}
 }
+async function sharePDF(){
+  const f=mkFile();if(!f)return;
+  const file=new File([f.blob],f.fn,{type:f.blob.type});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    try{try{await navigator.clipboard?.writeText(f.m.msg||'')}catch(e){}
+      await navigator.share({files:[file],text:f.m.msg||''});toast('Shared '+f.fn)}
+    catch(e){if(e.name!=='AbortError'){toast('Share failed - saving instead');saveBlob(f)}}
+  }else{saveBlob(f);toast('Saved. Attach it in WhatsApp')}
+}
+function saveBlob(f){
+  const u=URL.createObjectURL(f.blob);
+  const ios=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  if(ios){const w=window.open(u,'_blank');if(!w)location.href=u}
+  else{const a=document.createElement('a');a.href=u;a.download=f.fn;document.body.appendChild(a);a.click();a.remove()}
+  setTimeout(()=>URL.revokeObjectURL(u),60000)
+}
+function download(){const f=mkFile();if(f){saveBlob(f);toast('PDF ready: '+f.fn)}}
 
 function stats(bid){
   const B=x=>bid==='all'||x===bid;
@@ -505,6 +522,7 @@ document.addEventListener('click',e=>{
   const g=s=>e.target.closest(s);let el;
   if(g('a.wa')||(g('a.btn')&&g('[data-doc]')))return;
   if(el=g('#dl')){download()}
+  else if(g('#shr')){sharePDF()}
   else if(g('#chpw')){$('#modal').innerHTML=`<h2>Change password</h2><form id="pwf"><label class="fld"><span>New password (min 8)</span><input id="np" type="password" minlength="8" required autocomplete="new-password"></label><div class="acts"><span class="sp"></span><button type="button" class="btn ghost" id="cancel">Cancel</button><button class="btn">Save</button></div></form>`;$('#ov').classList.add('on');$('#pwf').addEventListener('submit',async ev=>{ev.preventDefault();ev.stopPropagation();const {error}=await db.auth.updateUser({password:$('#np').value});toast(error?'Could not change: '+error.message:'Password changed');if(!error)close()})}
   else if(g('#cpy')){navigator.clipboard?.writeText(curDoc?.m?.msg||'').then(()=>toast('Message copied'),()=>toast('Copy not allowed here'))}
   else if(el=g('[data-sign]')){const a=by('agreements',el.dataset.sign);if(a){const {id,...d}=a;write({op:'set',c:'agreements',id,data:{...d,signed:'Signed',signedDate:d.signedDate||iso(new Date())}},'Marked as signed')}}
