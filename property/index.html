@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MRC Properties</title>
-<link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" type="image/png" href="icon-512.png"><meta name="apple-mobile-web-app-title" content="MRC Properties"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="theme-color" content="#0b1026">
+<link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" type="image/png" href="icon-512.png"><meta name="apple-mobile-web-app-title" content="MRC Properties"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="theme-color" content="#0b1026">
 <meta name="robots" content="noindex">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -634,7 +634,8 @@ async function startSession(u){
 (async()=>{
   if(!window.supabase){online=false;status();if(S.agreements.length){ready=true;autoInvoice()}toast('Offline — showing saved data');return}
   db=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true}});
-  const {data:{session}}=await db.auth.getSession();
+  let session=null;try{session=(await Promise.race([db.auth.getSession(),new Promise(r=>setTimeout(()=>r({data:{session:null}}),5000))])).data.session}catch(e){}
+  if(!session&&!navigator.onLine&&S.agreements.length){online=false;status();$('#logout').hidden=false;ready=true;render();autoInvoice();toast('Offline — showing saved data');return}
   if(session)startSession(session.user);else{$('#login').classList.add('on');setTimeout(()=>$('#le').focus(),50)}
   $('#lf').addEventListener('submit',async e=>{e.preventDefault();e.stopPropagation();$('#lmsg').textContent='Signing in…';
     const {data,error}=await db.auth.signInWithPassword({email:$('#le').value.trim(),password:$('#lp').value});
@@ -645,5 +646,6 @@ async function startSession(u){
 
 }
 </script>
+<script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))</script>
 </body>
 </html>
