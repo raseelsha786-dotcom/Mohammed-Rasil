@@ -488,7 +488,7 @@ function fitPage(){const w=$('.dvpage'),p=$('.page');if(!w||!p)return;const W=79
 addEventListener('resize',fitPage);
 function mkFile(){
   const m=curDoc?.m;if(!m)return null;const name=(m.file+'_'+(m.x.t.name||'')).replace(/[^A-Za-z0-9_-]+/g,'_').replace(/_+$/,'');
-  if(window.jspdf){const b=docPDF(m);return{m,blob:b instanceof Blob?b:new Blob([b],{type:'application/pdf'}),fn:name+'.pdf'}}
+  if(window.jspdf){try{const b=docPDF(m);return{m,blob:b instanceof Blob?b:new Blob([b],{type:'application/pdf'}),fn:name+'.pdf'}}catch(e){toast('PDF error: '+(e.message||e)+' – saving printable page')}}
   toast('PDF tool not loaded (offline?) - saving printable page');
   return{m,blob:new Blob([`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(m.no)}</title><style>body{margin:0;background:#fff}${SHEETCSS}@page{size:A4;margin:12mm}</style></head><body>${docHTML(m)}</body></html>`],{type:'text/html'}),fn:name+'.html'}
 }
@@ -496,16 +496,17 @@ async function sharePDF(){
   const f=mkFile();if(!f)return;
   const file=new File([f.blob],f.fn,{type:f.blob.type});
   if(navigator.canShare&&navigator.canShare({files:[file]})){
-    try{try{await navigator.clipboard?.writeText(f.m.msg||'')}catch(e){}
-      await navigator.share({files:[file],text:f.m.msg||''});toast('Shared '+f.fn)}
+    // start both in the same tap: iPhone blocks share() if we wait for anything first, and WhatsApp drops the PDF when text is attached
+    try{navigator.clipboard?.writeText(f.m.msg||'').catch(()=>{})}catch(e){}
+    let sh;try{sh=navigator.share({files:[file]})}catch(e){sh=Promise.reject(e)}
+    try{await sh;toast('PDF shared · message text copied – paste it in WhatsApp')}
     catch(e){if(e.name!=='AbortError'){toast('Share failed - saving instead');saveBlob(f)}}
   }else{saveBlob(f);toast('Saved. Attach it in WhatsApp')}
 }
 function saveBlob(f){
   const u=URL.createObjectURL(f.blob);
   const ios=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
-  if(ios){const w=window.open(u,'_blank');if(!w)location.href=u}
-  else{const a=document.createElement('a');a.href=u;a.download=f.fn;document.body.appendChild(a);a.click();a.remove()}
+  const a=document.createElement('a');a.href=u;a.download=f.fn;a.rel='noopener';if(ios)a.target='_blank';document.body.appendChild(a);a.click();a.remove()
   setTimeout(()=>URL.revokeObjectURL(u),60000)
 }
 function download(){const f=mkFile();if(f){saveBlob(f);toast('PDF ready: '+f.fn)}}
