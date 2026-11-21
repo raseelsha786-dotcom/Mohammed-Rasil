@@ -58,6 +58,13 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 a.kpi{text-decoration:none;color:inherit;display:block}.okc{color:#1f7a3d}
 .tdb h2{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.tdb h2 .cnt{background:#eef0f6;border-radius:99px;padding:1px 9px;font-size:14px}.tdb h2 .amt{margin-left:auto;font-size:15px}
 .tdb.bad{border-left:4px solid #c8325a}.tdb.warn{border-left:4px solid #e0a106}.tdb.ok{border-left:4px solid #2e8b57}
+.bd{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px;vertical-align:middle;flex:none}
+.chips button{border-color:var(--bc,#3b4f86)}.chips button[aria-pressed=true]{background:var(--bc);color:#fff;border-color:var(--bc)}.chips button[data-bsel=all][aria-pressed=true]{color:var(--band)}.chips button[aria-pressed=true] .bd{background:#fff!important}
+.tabs button[aria-selected=true]{border-color:var(--tc,var(--acc))!important}.tabs button:hover{color:var(--tc,#fff)}
+.bcard{border-top:6px solid var(--bc)!important;background:color-mix(in srgb,var(--bc) 4%,#fff)}.bcard>.bh h2{color:var(--bc)}.rooms[style] .room{border-top:4px solid var(--bc)}.rooms[style] .room .rk tr:first-child td{color:var(--bc);font-weight:700}.bcard .bstats div{background:color-mix(in srgb,var(--bc) 9%,#fff)}
+tr.brow td:first-child{border-left:4px solid var(--bc)}
+.tdb{border-left:5px solid var(--tc)!important}.tdb h2{color:var(--tc)}.tdb h2 .cnt{background:var(--tc);color:#fff}
+.kpi[style*="--tc"]{border-top:4px solid var(--tc);background:color-mix(in srgb,var(--tc) 6%,#fff)}.kpi[style*="--tc"] span{color:var(--tc);font-weight:700}
 .kl{list-style:none;margin:0;padding:0}.kl li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:10px 4px;border-bottom:1px solid var(--line);cursor:pointer;align-items:center}.kl li .n{text-align:right;white-space:nowrap;font-weight:700}.kl li .sub{font-weight:400}
 .kds.ok{background:#e8f5ec}.kds.warn{background:#fff6e0}.kds.bad{background:#fdeaee}
 .meter{height:8px;background:var(--soft);border-radius:4px;overflow:hidden;margin-top:6px}.meter i{display:block;height:100%;background:var(--ok)}
@@ -155,7 +162,7 @@ const CATS=['Electricity & water (Etihad WE)','Sewerage','WiFi / internet','Main
 const UC=CATS.slice(0,3),BST=['Unpaid','Paid','Partly paid'],YN=['No','Yes'];
 const SCH={
  buildings:{t:'Building',f:[['code','Short code (e.g. HAM1)'],['name','Building name'],['area','Area / address'],['bname','Official building name (Tasdeeq)'],['district','District'],['sector','Sector'],['plot','Plot no'],['parcel','Parcel no'],['makani','Makani no'],['map','Google Maps link'],['owner','Owner / landlord'],['leaseFrom','Lease from','date'],['leaseTo','Lease to','date'],['leaseCost','Annual lease cost (AED)','num'],['_','Main accounts','h'],['elecAc','Etihad WE main a/c'],['sewAc','Sewerage a/c'],['contact','Watchman / contact'],['notes','Notes','area']]},
- units:{t:'Unit',f:[['bld','Building','bld'],['no','Flat / unit no'],['floor','Floor'],['space','Area (sq m)','num'],['premise','Etihad premise ID'],['type','Unit type','sel',TYPES],['furn','Furnishing','sel',FURN],['rent','Standard rent (AED)','num'],['contract','Contract type','sel',['Monthly','Yearly']],['period','Rent paid','sel',PER],['_','Utilities','h'],['wifi','WiFi','sel',UTIL],['elec','Electricity & water','sel',UTIL],['elecAc','Etihad WE a/c no'],['sew','Sewerage','sel',UTIL],['sewAc','Sewerage a/c no'],['notes','Notes','area']]},
+ units:{t:'Unit',f:[['bld','Building','bld'],['forRent','For rent?','sel',['Yes','No']],['no','Flat / unit no'],['floor','Floor'],['space','Area (sq m)','num'],['premise','Etihad premise ID'],['type','Unit type','sel',TYPES],['furn','Furnishing','sel',FURN],['rent','Standard rent (AED)','num'],['contract','Contract type','sel',['Monthly','Yearly']],['period','Rent paid','sel',PER],['_','Utilities','h'],['wifi','WiFi','sel',UTIL],['elec','Electricity & water','sel',UTIL],['elecAc','Etihad WE a/c no'],['sew','Sewerage','sel',UTIL],['sewAc','Sewerage a/c no'],['notes','Notes','area']]},
  tenants:{t:'Tenant',f:[['tid','Tenant ID','ro'],['name','Full name'],['nat','Nationality'],['mobile','Mobile'],['whatsapp','WhatsApp'],['email','Email'],['_','ID documents','h'],['eid','Emirates ID no'],['eidExp','Emirates ID expiry','date'],['pp','Passport no'],['ppExp','Passport expiry','date'],['idCopy','ID copy received','sel',YN],['payMode','Usually pays by','sel',METH],['employer','Company / employer'],['emerg','Emergency contact'],['notes','Notes','area']]},
  agreements:{t:'Agreement',f:[['no','Agreement no','ro'],['tenant','Tenant','tenant'],['unit','Unit','unit'],['start','Start date','date'],['end','End date','date'],['period','Rent period','sel',PER],['rent','Rent amount (AED)','num'],['sewaFee','SEWA / sewerage charge per month (AED)','num'],['discount','Discount per month (AED)','num'],['wifiFee','WiFi charge per month (AED)','num'],['deposit','Security deposit (AED)','num'],['depositHeld','Deposit already received (before this system)','sel',YN],['cheques','No. of cheques / instalments (yearly)','num'],['dueDay','Rent due date (day of month, 1–28)','num'],['billFrom','Auto-invoice from','date'],['use','Use','sel',['Residential','Commercial']],['occ','Max occupants','num'],['furn','Furnishing','sel',FURN],['_','Utilities — included in rent?','h'],['wifi','WiFi','sel',UTIL],['elec','Electricity & water','sel',UTIL],['ewCap','Electricity & water included up to (AED / month) – tenant pays above this','num'],['sew','Sewerage','sel',UTIL],['muni','Tasdeeq / municipality no'],['signed','Agreement signed','sel',['Not signed','Signed']],['signedDate','Signed on','date'],['special','Special terms (printed on agreement)','area'],['_','Move-in (handover)','h'],['moveIn','Move-in date','date'],['keys','Keys given','num'],['inElec','Electricity meter (in)'],['inWater','Water meter (in)'],['inventory','Items handed over (one per line)','area'],['_','Move-out (vacate)','h'],['noticeDate','Vacate notice date','date'],['vacateDate','Vacate date','date'],['keysBack','Keys returned','num'],['outElec','Electricity meter (out)'],['outWater','Water meter (out)'],['damage','Damages found','area'],['damageAmt','Damage charges (AED)','num'],['utilDue','Utility dues (AED)','num'],['cleanFee','Cleaning charges (AED)','num'],['keys','Keys','sel',['Handed over','Not handed over']],['keysOn','Keys handed over on','date'],['noticeOn','Vacate notice received on','date'],['vacateOn','Vacating on (date)','date'],['renew','Renewing?','sel',['','Yes','No']],['closed','Closed / vacated','sel',YN],['notes','Notes','area']]},
  payments:{t:'Rent payment',f:[['rno','Receipt no','ro'],['date','Date received','date'],['pkind','Payment for','sel',['Rent','Security deposit','Other']],['inv','Against invoice','inv'],['agr','Agreement','agr'],['paid','Amount paid (AED) – full or part','num'],['method','Method','sel',METH],['chq','Cheque no'],['bank','Bank'],['chqDate','Cheque date','date'],['chqStatus','Cheque status','sel',CHQ],['by','Collected by'],['notes','Notes','area']]},
@@ -438,7 +445,7 @@ function download(){const f=mkFile();if(f){saveBlob(f);toast('PDF ready: '+f.fn)
 
 function stats(bid){
   const B=x=>bid==='all'||x===bid;
-  const us=S.units.filter(u=>B(u.bld)),occ=us.filter(uagr).length;
+  const us=S.units.filter(u=>B(u.bld)&&RENT(u)),occ=us.filter(uagr).length;
   const exp=S.agreements.filter(a=>live(a)&&B(abld(a))).reduce((s,a)=>s+(+a.rent||0)*(FX[a.period]||1)+(a.period==='Monthly'?(+a.sewaFee||0)+(+a.wifiFee||0)-(+a.discount||0):0),0);
   const col=S.payments.filter(p=>B(pbld(p))&&inM(p.date)).reduce((s,p)=>s+(+p.paid||0),0);
   const bal=S.invoices.filter(i=>{const a=by('agreements',i.agr);return a&&B(abld(a))&&IS[i.id]&&IS[i.id].od>=0}).reduce((s,i)=>s+IS[i.id].bal,0);
@@ -467,7 +474,7 @@ const kli=(attr,l1,l2,r1,r2)=>`<li ${attr}><div><b>${l1}</b>${l2?`<div class="su
 function todayView(){
   const now=new Date(),td=iso(now),cm=td.slice(0,7),sum=(L,f)=>L.reduce((x,y)=>x+f(y),0);
   const ags=S.agreements.filter(a=>inB(abld(a))&&live(a));
-  const ur=a=>by('units',a.unit),rl=a=>esc(ulab(ur(a)))+' · '+esc(tname(a.tenant));
+  const ur=a=>by('units',a.unit),rl=a=>bdot(ur(a)?.bld)+esc(ulab(ur(a)))+' · '+esc(tname(a.tenant));
   // pending (overdue / due)
   const pend=S.agreements.filter(a=>inB(abld(a))).map(a=>{const op=aopen(a);return{a,op,bal:sum(op,i=>IS[i.id].bal),d:op.length?days(op[0].dueDate):null,dl:wDeadline(a)}}).filter(r=>r.bal>0);
   const dueToday=pend.filter(r=>r.d===0),overdue=pend.filter(r=>r.d<0).sort((x,y)=>y.bal-x.bal);
@@ -485,9 +492,9 @@ function todayView(){
   const pays=S.payments.filter(p=>inB(pbld(p))),gotT=sum(pays.filter(p=>p.date===td),p=>+p.paid||0),gotM=sum(pays.filter(p=>(p.date||'').slice(0,7)===cm),p=>+p.paid||0);
   const totP=sum(pend,r=>r.bal),comingAmt=sum(coming,r=>r.amt);
   const chq=upChq().filter(q=>q.d!=null&&q.d<=7);
-  const vac=S.units.filter(u=>inB(u.bld)&&!uagr(u)).sort(sortU);
+  const vac=S.units.filter(u=>inB(u.bld)&&RENT(u)&&!uagr(u)).sort(sortU);
   const tk=S.tickets.filter(t=>t.status!=='Done'&&inB(by('units',t.unit)?.bld)).sort((x,y)=>(x.date||'').localeCompare(y.date||''));
-  const clean=tk.filter(t=>/clean|handover|hand over|key/i.test((t.desc||'')+' '+(t.notes||''))),fix=tk.filter(t=>!clean.includes(t));
+  const clean=tk.filter(t=>/clean|handover|hand over/i.test((t.desc||'')+' '+(t.notes||''))),fix=tk.filter(t=>!clean.includes(t));
   const keys=ags.filter(a=>a.keys==='Not handed over');
   const fu=[];
   S.agreements.filter(a=>inB(abld(a))).forEach(a=>{const st=ast(a),d=days(a.end),v=days(a.vacateOn);
@@ -500,27 +507,33 @@ function todayView(){
     if(live(a)&&/pending|needed/i.test(tname(a.tenant)))fu.push([2,a,'Tenant name / mobile missing','mute'])});
   fu.sort((x,y)=>x[0]-y[0]);
   const ubill=S.bills.filter(b=>inB(b.bld)&&b.status!=='Paid'&&b.paidBy!=='Tenant');
-  const box=(id,ic,t,n,amt,cls,body)=>`<div class="card tdb ${cls}" id="td-${id}"><h2>${ic} ${t} <span class="cnt">${n}</span>${amt!=null?`<span class="amt">AED ${fmt(amt)}</span>`:''}</h2>${n?`<ul class="kl">${body}</ul>`:'<p class="sub">Nothing — all clear ✅</p>'}</div>`;
+  const TB={today:'#f59e0b',pend:'#dc2626',coming:'#2563eb',chq:'#7c3aed',vac:'#0891b2',clean:'#ca8a04',fix:'#ea580c',fu:'#4f46e5',got:'#16a34a'};
+  const box=(id,ic,t,n,amt,cls,body)=>`<div class="card tdb" id="td-${id}" style="--tc:${TB[id]}"><h2>${ic} ${t} <span class="cnt">${n}</span>${amt!=null?`<span class="amt">AED ${fmt(amt)}</span>`:''}</h2>${n?`<ul class="kl">${body}</ul>`:'<p class="sub">Nothing — all clear ✅</p>'}</div>`;
   const wd=now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
   let h=`<div class="tdhead"><h1>Today · ${esc(wd)}</h1><p class="sub">${bsel==='all'?'All buildings':esc(by('buildings',bsel)?.name||'')}</p></div>
   <div class="kpis">
-   <a class="kpi money tap2" href="#td-pend"><span>Pending total</span><b>AED ${fmt(totP)}</b><em>${pend.length} rooms</em></a>
-   <a class="kpi tap2" href="#td-got"><span>Received · ${now.toLocaleDateString('en-GB',{month:'short'})}</span><b class="okc">AED ${fmt(gotM)}</b><em>today AED ${fmt(gotT)}</em></a>
-   <a class="kpi tap2" href="#td-coming"><span>Coming in 1–2 days</span><b>AED ${fmt(comingAmt)}</b><em>${coming.length} rooms</em></a>
-   <a class="kpi tap2" href="#td-vac"><span>Vacant rooms</span><b>${vac.length}</b><em>cheques this week: ${chq.length}</em></a></div>`;
+   <a class="kpi money tap2" href="#td-pend" style="--tc:#dc2626"><span>Pending total</span><b>AED ${fmt(totP)}</b><em>${pend.length} rooms</em></a>
+   <a class="kpi tap2" href="#td-got" style="--tc:#16a34a"><span>Received · ${now.toLocaleDateString('en-GB',{month:'short'})}</span><b class="okc">AED ${fmt(gotM)}</b><em>today AED ${fmt(gotT)}</em></a>
+   <a class="kpi tap2" href="#td-coming" style="--tc:#2563eb"><span>Coming in 1–2 days</span><b>AED ${fmt(comingAmt)}</b><em>${coming.length} rooms</em></a>
+   <a class="kpi tap2" href="#td-vac" style="--tc:#0891b2"><span>Vacant rooms</span><b>${vac.length}</b><em>cheques this week: ${chq.length}</em></a></div>`;
   h+=box('today','💰','Collect today',dueToday.length,sum(dueToday,r=>r.bal),'warn',dueToday.map(r=>kli(`data-room="${r.a.unit}"`,rl(r.a),r.op.map(i=>esc(i.ino)).join(', '),tag('AED '+fmt(r.bal),'warn'),'due today')).join(''));
   h+=box('pend','🔴','Rent pending',overdue.length,sum(overdue,r=>r.bal),'bad',overdue.map(r=>{const w=r.op.some(i=>IS[i.id].st==='Warning'),n=r.dl?days(r.dl):null;return kli(`data-room="${r.a.unit}"`,rl(r.a),'Since '+fd(r.op[0].dueDate)+' · '+(-r.d)+' days late'+(r.op.length>1?' · '+r.op.length+' invoices':''),tag('AED '+fmt(r.bal),'bad'),w&&n!=null?esc(leftTxt(n)):'')}).join(''));
   h+=box('coming','📅','Rent coming in 1–2 days',coming.length,comingAmt,'',coming.map(r=>kli(`data-room="${r.a.unit}"`,rl(r.a),fd(r.dt)+' · '+(r.d===1?'tomorrow':'in 2 days'),'AED '+fmt(r.amt),'')).join(''));
   h+=box('chq','🧾','Cheques to deposit (7 days)',chq.length,sum(chq,q=>+q.k.amount||0),'',chq.map(({k,a,d})=>kli(`data-open="cheques" data-id="${k.id}"`,rl(a),'#'+esc(k.chq||'?')+' '+esc(k.bank||'')+' · '+fd(k.chqDate)+(k.purpose&&k.purpose!=='Rent'?' · '+esc(k.purpose):''),'AED '+fmt(k.amount),d<0?(-d)+'d passed':d===0?'TODAY':'in '+d+'d')).join(''));
-  h+=box('vac','🚪','Vacant rooms',vac.length,null,'',vac.map(u=>kli(`data-room="${u.id}"`,esc(ulab(u)),esc([u.type,u.furn,(u.notes||'').length>60?u.notes.slice(0,57)+'…':u.notes].filter(Boolean).join(' · ')),u.rent?'Ask '+fmt(u.rent):'','')).join(''));
-  h+=box('clean','🧹','Cleaning / handover pending',clean.length+keys.filter(a=>!clean.some(t=>t.unit===a.unit)).length,null,'warn',clean.map(t=>kli(`data-room="${t.unit}"`,esc(ulab(by('units',t.unit))),esc(t.desc)+(t.date?' · since '+fd(t.date):''),tag(t.status||'Open','warn'),'')).join('')+keys.filter(a=>!clean.some(t=>t.unit===a.unit)).map(a=>kli(`data-room="${a.unit}"`,rl(a),'Keys not handed over','🔑','')).join(''));
-  h+=box('fix','🔧','Maintenance & complaints open',fix.length,null,'',fix.map(t=>{const d=t.date?-days(t.date):null;return kli(`data-room="${t.unit}"`,esc(ulab(by('units',t.unit)))+' · '+esc(t.kind||''),esc(t.desc),tag(t.status||'Open',d!=null&&d>=1?'bad':'warn'),d!=null?(d>=1?d+'d open':'today'):'')}).join(''));
+  h+=box('vac','🚪','Vacant rooms',vac.length,null,'',vac.map(u=>kli(`data-room="${u.id}"`,bdot(u.bld)+esc(ulab(u)),esc([u.type,u.furn,(u.notes||'').length>60?u.notes.slice(0,57)+'…':u.notes].filter(Boolean).join(' · ')),u.rent?'Ask '+fmt(u.rent):'','')).join(''));
+  h+=box('clean','🧹','Cleaning / handover pending',clean.length+keys.filter(a=>!clean.some(t=>t.unit===a.unit)).length,null,'warn',clean.map(t=>kli(`data-room="${t.unit}"`,bdot(by('units',t.unit)?.bld)+esc(ulab(by('units',t.unit))),esc(t.desc)+(t.date?' · since '+fd(t.date):''),tag(t.status||'Open','warn'),'')).join('')+keys.filter(a=>!clean.some(t=>t.unit===a.unit)).map(a=>kli(`data-room="${a.unit}"`,rl(a),'Keys not handed over','🔑','')).join(''));
+  h+=box('fix','🔧','Maintenance & complaints open',fix.length,null,'',fix.map(t=>{const d=t.date?-days(t.date):null;return kli(`data-room="${t.unit}"`,bdot(by('units',t.unit)?.bld)+esc(ulab(by('units',t.unit)))+' · '+esc(t.kind||''),esc(t.desc),tag(t.status||'Open',d!=null&&d>=1?'bad':'warn'),d!=null?(d>=1?d+'d open':'today'):'')}).join(''));
   h+=box('fu','📌','Follow-up',fu.length+ubill.length,null,'',fu.map(([,a,t,c])=>kli(`data-room="${a.unit}"`,rl(a),'',tag(t,c),'')).join('')+ubill.map(b=>kli(`data-open="bills" data-id="${b.id}"`,'Bill unpaid · '+esc(b.cat)+' · '+esc(bcode(b.bld))+(b.unit?' '+esc(ulab(by('units',b.unit))):''),fd(b.date)+(b.desc?' · '+esc(b.desc):''),'AED '+fmt(b.amount),'')).join(''));
   const pt=pays.filter(p=>(p.date||'').slice(0,7)===cm).sort((x,y)=>(y.date||'').localeCompare(x.date||''));
   h+=box('got','✅','Received this month',pt.length,gotM,'ok',pt.map(p=>{const a=by('agreements',p.agr);return kli(`data-open="payments" data-id="${p.id}"`,a?rl(a):'—',fd(p.date)+' · '+esc(p.method||'')+(p.pkind&&p.pkind!=='Rent'?' · '+esc(p.pkind):''),fmt(p.paid),'')}).join(''));
   return h;
 }
 let kpiK=null;
+const BCOL={HAM1:'#2563eb',NAK2:'#16a34a',RAW2:'#ea580c',RUM2:'#9333ea'},BPAL=['#0891b2','#db2777','#ca8a04','#4f46e5'];
+const bcol=id=>{const b=by('buildings',id);if(!b)return'#64748b';return BCOL[b.code]||BPAL[S.buildings.indexOf(b)%BPAL.length]};
+const bdot=id=>`<i class="bd" style="background:${bcol(id)}"></i>`;
+const TCOL={home:'#f59e0b',rooms:'#22c55e',overview:'#38bdf8',docs:'#f472b6',units:'#a78bfa',tenants:'#2dd4bf',agreements:'#fb923c',payments:'#4ade80',bills:'#f87171',buildings:'#93c5fd'};
+const RENT=u=>u.forRent!=='No';
 const actr=a=>a.contract||(a.period==='Yearly'?'Yearly':'Monthly');
 const aexp=a=>(+a.rent||0)*(FX[a.period]||1)+(a.period==='Monthly'?(+a.sewaFee||0)+(+a.wifiFee||0)-(+a.discount||0):0);
 function kpiDetail(k){
@@ -545,7 +558,7 @@ function kpiDetail(k){
       sec('⚪ Nothing due yet this month',ok.length,null,'mute',ul(ok.map(row)))+'</div>';
   }
   if(k==='occ'){
-    const us=S.units.filter(u=>B(u.bld)).sort(sortU),vac=us.filter(u=>!uagr(u)),occ=us.filter(uagr);
+    const us=S.units.filter(u=>B(u.bld)&&RENT(u)).sort(sortU),vac=us.filter(u=>!uagr(u)),occ=us.filter(uagr);
     return head('Occupancy · '+occ.length+' / '+us.length)+
       sec('🔴 Vacant',vac.length,null,'bad',ul(vac.map(u=>li(`data-room="${u.id}"`,esc(ulab(u)),esc([u.type,u.furn,u.notes].filter(Boolean).join(' · ')),u.rent?'Ask '+fmt(u.rent):'',''))))+
       sec('✅ Occupied',occ.length,null,'ok',ul(occ.map(u=>{const a=uagr(u);return li(`data-room="${u.id}"`,esc(ulab(u))+' · '+esc(tname(a.tenant)),a.end?'Ends '+fd(a.end):'',fmt(aexp(a)),esc(a.period||''))})))+'</div>';
@@ -568,13 +581,13 @@ function overview(){
   if(!S.buildings.length)return`<div class="empty">No buildings yet.<br><button class="btn" data-new="buildings">+ Add building</button></div>`;
   const s=stats(bsel),pc=s.exp?Math.min(100,s.col/s.exp*100):0,oc=s.n?s.occ/s.n*100:0;
   let h=`<div class="kpis">
-   <div class="kpi tap${kpiK==='col'?' on':''}" data-kpi="col"><span>Collected · ${esc(month)}</span><b>AED ${fmt(s.col)}</b><em>of ${fmt(s.exp)} expected / month</em><div class="meter"><i style="width:${pc}%"></i></div></div>
-   <div class="kpi tap${kpiK==='occ'?' on':''}" data-kpi="occ"><span>Occupancy</span><b>${s.occ} / ${s.n}</b><em>${s.vac} vacant</em><div class="meter"><i style="width:${oc}%"></i></div></div>
-   <div class="kpi money tap${kpiK==='bal'?' on':''}" data-kpi="bal"><span>Rent balance due</span><b>AED ${fmt(s.bal)}</b><em>all open agreements</em></div>
-   <div class="kpi tap${kpiK==='net'?' on':''}" data-kpi="net"><span>Net this month</span><b>AED ${fmt(s.net)}</b><em>bills ${fmt(s.util)} · expenses ${fmt(s.ex)}</em></div></div>`+kpiDetail(kpiK);
+   <div class="kpi tap${kpiK==='col'?' on':''}" data-kpi="col" style="--tc:#16a34a"><span>Collected · ${esc(month)}</span><b>AED ${fmt(s.col)}</b><em>of ${fmt(s.exp)} expected / month</em><div class="meter"><i style="width:${pc}%"></i></div></div>
+   <div class="kpi tap${kpiK==='occ'?' on':''}" data-kpi="occ" style="--tc:#0891b2"><span>Occupancy</span><b>${s.occ} / ${s.n}</b><em>${s.vac} vacant</em><div class="meter"><i style="width:${oc}%"></i></div></div>
+   <div class="kpi money tap${kpiK==='bal'?' on':''}" data-kpi="bal" style="--tc:#dc2626"><span>Rent balance due</span><b>AED ${fmt(s.bal)}</b><em>all open agreements</em></div>
+   <div class="kpi tap${kpiK==='net'?' on':''}" data-kpi="net" style="--tc:#4f46e5"><span>Net this month</span><b>AED ${fmt(s.net)}</b><em>bills ${fmt(s.util)} · expenses ${fmt(s.ex)}</em></div></div>`+kpiDetail(kpiK);
   if(bsel==='all'){
     h+=`<div class="card"><h2>Each building — separate account</h2><table class="stack"><thead><tr><th>Building</th><th class="n">Units</th><th class="n">Vacant</th><th class="n">Expected</th><th class="n">Collected</th><th class="n">Balance due</th><th class="n">Bills + exp.</th><th class="n">Net</th></tr></thead><tbody>`+
-    [...S.buildings].sort((a,b)=>(a.code||'').localeCompare(b.code||'')).map(b=>{const x=stats(b.id);return`<tr data-b="${b.id}"><td><b>${esc(b.name)}</b> <span class="sub">${esc(b.code)}</span></td><td class="n">${x.n}</td><td class="n">${x.vac}</td><td class="n">${fmt(x.exp)}</td><td class="n">${fmt(x.col)}</td><td class="n">${fmt(x.bal)}</td><td class="n">${fmt(x.util+x.ex)}</td><td class="n"><b>${fmt(x.net)}</b></td></tr>`}).join('')+`</tbody></table></div>`;
+    [...S.buildings].sort((a,b)=>(a.code||'').localeCompare(b.code||'')).map(b=>{const x=stats(b.id);return`<tr data-b="${b.id}" style="--bc:${bcol(b.id)}" class="brow"><td>${bdot(b.id)}<b>${esc(b.name)}</b> <span class="sub">${esc(b.code)}</span></td><td class="n">${x.n}</td><td class="n">${x.vac}</td><td class="n">${fmt(x.exp)}</td><td class="n">${fmt(x.col)}</td><td class="n">${fmt(x.bal)}</td><td class="n">${fmt(x.util+x.ex)}</td><td class="n"><b>${fmt(x.net)}</b></td></tr>`}).join('')+`</tbody></table></div>`;
   }
   const al=alerts();
   h+=`<div class="card"><h2>Needs attention</h2>${al.length?`<ul class="alerts">${al.slice(0,40).map(a=>`<li ${a[4].startsWith('doc:')?`data-doc="${a[4].slice(4)}"`:`data-open="${a[4]}"`} data-id="${a[5]}">${tag(a[2],a[1])}<span>${a[3]}</span></li>`).join('')}</ul>`:'<p class="sub">Nothing pending — all clear.</p>'}</div>`;
@@ -644,7 +657,7 @@ function roomsView(){
     const cards=us.map(u=>{
       const a=uagr(u),t=a?by('tenants',a.tenant)||{}:null,op=a?aopen(a):[],fee=a?afee(a):0,bal=op.reduce((x,i)=>x+IS[i.id].bal,0)+fee;
       const tk=S.tickets.filter(k=>k.unit===u.id&&k.status!=='Done');const ub=S.bills.filter(x=>x.unit===u.id&&x.status!=='Paid'&&x.paidBy!=='Tenant');
-      if(!a)return`<div class="room vac"><div class="rh"><b>${esc(u.no)}</b><span class="sub">${esc(u.type||'')}${u.furn?' · '+esc(u.furn):''}</span>${tag('Vacant','mute')}</div><div class="sub">${esc(u.notes||'')}</div>${u.rent?`<div>Asking rent: <b>AED ${fmt(u.rent)}</b></div>`:''}${tk.length?`<div class="tk">🛠 ${tk.length} open: ${tk.map(k=>esc(k.desc)).join(' · ')}</div>`:''}<div class="ra"><button class="btn ghost mini" data-new="agreements" data-pre='${esc(JSON.stringify({unit:u.id}))}'>+ New tenant</button><button class="btn ghost mini" data-new="tickets" data-pre='${esc(JSON.stringify({unit:u.id}))}'>🛠 Maintenance</button></div></div>`;
+      if(!a)return`<div class="room vac"><div class="rh"><b>${esc(u.no)}</b><span class="sub">${esc(u.type||'')}${u.furn?' · '+esc(u.furn):''}</span>${RENT(u)?tag('Vacant','mute'):tag('Not for rent','mute')}</div><div class="sub">${esc(u.notes||'')}</div>${u.rent?`<div>Asking rent: <b>AED ${fmt(u.rent)}</b></div>`:''}${tk.length?`<div class="tk">🛠 ${tk.length} open: ${tk.map(k=>esc(k.desc)).join(' · ')}</div>`:''}<div class="ra"><button class="btn ghost mini" data-new="agreements" data-pre='${esc(JSON.stringify({unit:u.id}))}'>+ New tenant</button><button class="btn ghost mini" data-new="tickets" data-pre='${esc(JSON.stringify({unit:u.id}))}'>🛠 Maintenance</button></div></div>`;
       occ++;const mon=(+a.rent||0)+(+a.sewaFee||0)+(+a.wifiFee||0)-(+a.discount||0);exp+=a.period==='Yearly'?(+a.rent||0)/12:mon;pend+=bal;
       const mi=ainv(a).filter(i=>i.kind!=='Late fee'&&((i.from&&i.to&&i.from<=today&&today<=i.to&&month===today.slice(0,7))||(i.dueDate||'').slice(0,7)===month)).sort((x,y)=>(x.dueDate||'').localeCompare(y.dueDate||''));
       const mAmt=mi.reduce((x,i)=>x+(+i.amount||0),0),mGot=mi.reduce((x,i)=>x+(IS[i.id]?.got||0),0),mBal=mi.reduce((x,i)=>x+Math.max(0,IS[i.id]?.bal??0),0);got+=mGot;
@@ -680,9 +693,9 @@ ${R('Customer complaint',tkC.length?tkC.map(k=>`<a data-open="tickets" data-id="
 </tbody></table>
 <div class="ra"><button class="btn mini" data-room="${u.id}">📂 Open room</button><button class="btn ghost mini" data-new="payments" data-pre='${esc(JSON.stringify({agr:a.id,inv:op[0]?.id||'',paid:op[0]?IS[op[0].id].bal:''}))}'>+ Payment</button><button class="btn ghost mini" data-new="tickets" data-pre='${esc(JSON.stringify({unit:u.id}))}'>🛠 Complaint</button>${t.mobile?`<a class="btn ghost mini wa" target="_blank" rel="noopener" href="https://wa.me/${waNum(t.mobile)}">💬 WhatsApp</a>`:''}</div>
 </div>`}).join('');
-    const vac=us.length-occ;
-    return`<div class="card bcard"><div class="bh"><div><h2>${esc(b.name)}</h2><div class="sub">${esc(baddr(b)||b.area||'')}</div></div><a class="btn ghost mini" target="_blank" rel="noopener" href="${esc(bmap(b))}">📍 Map</a></div>
-<div class="bstats"><div><b>${us.length}</b><span>Rooms</span></div><div><b>${occ}</b><span>Occupied</span></div><div><b>${vac}</b><span>Vacant</span></div><div><b>${fmt(exp)}</b><span>Rent / month</span></div><div><b>${fmt(got)}</b><span>Collected ${esc(month)}</span></div><div class="${pend>0?'bal':''}"><b>${fmt(pend)}</b><span>Pending</span></div></div></div><div class="rooms">${cards}</div>`
+    const nr=us.filter(u=>RENT(u)).length,vac=nr-occ;
+    return`<div class="card bcard" style="--bc:${bcol(b.id)}"><div class="bh"><div><h2>${bdot(b.id)}${esc(b.name)}</h2><div class="sub">${esc(baddr(b)||b.area||'')}</div></div><a class="btn ghost mini" target="_blank" rel="noopener" href="${esc(bmap(b))}">📍 Map</a></div>
+<div class="bstats"><div><b>${nr}</b><span>Rooms</span></div><div><b>${occ}</b><span>Occupied</span></div><div><b>${vac}</b><span>Vacant</span></div><div><b>${fmt(exp)}</b><span>Rent / month</span></div><div><b>${fmt(got)}</b><span>Collected ${esc(month)}</span></div><div class="${pend>0?'bal':''}"><b>${fmt(pend)}</b><span>Pending</span></div></div></div><div class="rooms" style="--bc:${bcol(b.id)}">${cards}</div>`
   }).join('')||'<div class="empty">No rooms.</div>'
 }
 function payTop(){
@@ -706,8 +719,8 @@ function docsView(){
 function render(){
   IS=invState();
   const bs=[...S.buildings].sort((a,b)=>(a.code||'').localeCompare(b.code||''));
-  $('#chips').innerHTML=[['all','All buildings'],...bs.map(b=>[b.id,b.name||b.code])].map(([id,n])=>`<button data-bsel="${id}" aria-pressed="${bsel===id}">${esc(n)}</button>`).join('');
-  $('#tabs').innerHTML=TABS.map(([k,n])=>`<button role="tab" data-tab="${k}" aria-selected="${tab===k}">${n}</button>`).join('');
+  $('#chips').innerHTML=[['all','All buildings'],...bs.map(b=>[b.id,b.name||b.code])].map(([id,n])=>`<button data-bsel="${id}" aria-pressed="${bsel===id}" style="--bc:${id==='all'?'#ffffff':bcol(id)}">${id==='all'?'':bdot(id)}${esc(n)}</button>`).join('');
+  $('#tabs').innerHTML=TABS.map(([k,n])=>`<button role="tab" data-tab="${k}" aria-selected="${tab===k}" style="--tc:${TCOL[k]||'#fff'}">${n}</button>`).join('');
   $('#q').hidden=tab==='overview'||tab==='home';$('#month').hidden=!['overview','rooms','payments','bills','docs'].includes(tab);
   $('#add').textContent='+ '+(tab==='overview'||tab==='home'?'Rent payment':tab==='rooms'?'Complaint / maintenance':tab==='docs'?'Invoice':SCH[tab].t);
   $('#main').innerHTML=tab==='home'?todayView():tab==='overview'?overview():tab==='rooms'?roomsView():LIST[tab]();
