@@ -529,7 +529,7 @@ function roomsView(){
       const tk=S.tickets.filter(k=>k.unit===u.id&&k.status!=='Done');const ub=S.bills.filter(x=>x.unit===u.id&&x.status!=='Paid'&&x.paidBy!=='Tenant');
       if(!a)return`<div class="room vac"><div class="rh"><b>${esc(u.no)}</b><span class="sub">${esc(u.type||'')}${u.furn?' · '+esc(u.furn):''}</span>${tag('Vacant','mute')}</div><div class="sub">${esc(u.notes||'')}</div>${u.rent?`<div>Asking rent: <b>AED ${fmt(u.rent)}</b></div>`:''}${tk.length?`<div class="tk">🛠 ${tk.length} open: ${tk.map(k=>esc(k.desc)).join(' · ')}</div>`:''}<div class="ra"><button class="btn ghost mini" data-new="agreements" data-pre='${esc(JSON.stringify({unit:u.id}))}'>+ New tenant</button><button class="btn ghost mini" data-new="tickets" data-pre='${esc(JSON.stringify({unit:u.id}))}'>🛠 Maintenance</button></div></div>`;
       occ++;const mon=(+a.rent||0)+(+a.sewaFee||0)+(+a.wifiFee||0)-(+a.discount||0);exp+=a.period==='Yearly'?(+a.rent||0)/12:mon;pend+=bal;
-      const mi=ainv(a).filter(i=>(i.dueDate||'').slice(0,7)===month&&i.kind!=='Late fee').sort((x,y)=>(x.dueDate||'').localeCompare(y.dueDate||''));
+      const mi=ainv(a).filter(i=>i.kind!=='Late fee'&&((i.from&&i.to&&i.from<=today&&today<=i.to&&month===today.slice(0,7))||(i.dueDate||'').slice(0,7)===month)).sort((x,y)=>(x.dueDate||'').localeCompare(y.dueDate||''));
       const mAmt=mi.reduce((x,i)=>x+(+i.amount||0),0),mGot=mi.reduce((x,i)=>x+(IS[i.id]?.got||0),0),mBal=mi.reduce((x,i)=>x+Math.max(0,IS[i.id]?.bal??0),0);got+=mGot;
       const ps=S.payments.filter(p=>p.agr===a.id).sort((x,y)=>(y.date||'').localeCompare(x.date||'')),lp=ps[0];
       const mst=!mi.length?tag('No invoice this month','mute'):mBal<=0?tag('Paid','ok'):mGot>0?tag('Partial','warn'):mi.some(i=>(i.dueDate||'')<today)?tag('Unpaid','bad'):tag('Due '+fd(mi[0].dueDate),'mute');
@@ -546,7 +546,7 @@ ${R('Tenant name',`<b>${esc(t.name||'—')}</b>`)}
 ${R('Tenant details',[t.mobile?`<a href="tel:${esc(t.mobile.replace(/\s/g,''))}">📞 ${esc(t.mobile)}</a>`:'<span class="bad-t">no mobile</span>',t.nat&&esc(t.nat),t.eid&&'EID '+esc(t.eid),t.eidExp&&'exp '+fd(t.eidExp),t.employer&&esc(t.employer)].filter(Boolean).join(' · '))}
 ${R('Rent date',a.dueDay?`${a.dueDay}${['th','st','nd','rd'][(a.dueDay%10<4&&(a.dueDay<11||a.dueDay>13))?a.dueDay%10:0]} every ${a.period==='Yearly'?'cheque':'month'} · next ${fd(nextDue(a))||'—'}`:'—')}
 ${R('Rent amount',`<b>AED ${fmt(a.period==='Yearly'?a.rent:mon)}</b> ${a.period==='Yearly'?'/ year · '+(a.cheques||1)+' payments':'/ month'}${parts.length>1?'<div class="sub">'+parts.map(r=>r[0]+' '+fmt(r[1])).join(' + ')+'</div>':''}`)}
-${R('Rent due',mi.length?`AED ${fmt(mAmt)} · due ${fd(mi[0].dueDate)}`:'No invoice in '+esc(month))}
+${R('Rent due',mi.length?mi.map(i=>`AED ${fmt(i.amount)} · due ${fd(i.dueDate)}${i.from?' <span class="sub">('+fd(i.from)+' – '+fd(i.to)+')</span>':''}`).join('<br>'):'No invoice in '+esc(month))}
 ${R('Rent paid',`AED ${fmt(mGot)}${lp?` <span class="sub">· last ${fmt(lp.paid)} on ${fd(lp.date)} ${esc(lp.method||'')}</span>`:''}`)}
 ${R('Partial payment',mGot>0&&mBal>0?tag('Yes – paid '+fmt(mGot)+' of '+fmt(mAmt),'warn'):'No')}
 ${R('Balance pending',`<b>AED ${fmt(bal)}</b>${op.length>1?` <span class="sub">(${op.length} invoices)</span>`:''}${fee?` <span class="sub">incl. fine ${fmt(fee)}</span>`:''} ${mst}`,bal>0?'bal':'')}
