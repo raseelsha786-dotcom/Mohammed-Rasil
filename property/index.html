@@ -48,6 +48,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .kpi b{font:800 clamp(22px,3.2vw,32px)/1.1 "Red Hat Display",sans-serif;display:block;margin:4px 0;white-space:nowrap}
 .kpi em{font-style:normal;font-size:13px;color:var(--mute)}
 .kpi.money b{color:var(--acc)}
+.kpi.tap{cursor:pointer;position:relative;transition:border-color .15s,box-shadow .15s}
+.kpi.tap:after{content:'Tap for list ›';display:block;margin-top:8px;font-size:12px;font-weight:700;color:var(--acc)}
+.kpi.tap.on{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc) inset}
+.kpi.tap.on:after{content:'Showing list ▾'}
+.kdh{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.kds{font-size:15px;margin:18px 0 6px;padding:6px 10px;border-radius:8px;background:#f3f4f8}
+.kl{list-style:none;margin:0;padding:0}.kl li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:10px 4px;border-bottom:1px solid var(--line);cursor:pointer;align-items:center}.kl li .n{text-align:right;white-space:nowrap;font-weight:700}.kl li .sub{font-weight:400}
+.kds.ok{background:#e8f5ec}.kds.warn{background:#fff6e0}.kds.bad{background:#fdeaee}
 .meter{height:8px;background:var(--soft);border-radius:4px;overflow:hidden;margin-top:6px}.meter i{display:block;height:100%;background:var(--ok)}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
 .card h2{font-size:20px;margin-bottom:10px}
@@ -450,14 +458,57 @@ function alerts(){
   S.bills.filter(b=>inB(b.bld)&&b.status!=='Paid'&&b.paidBy!=='Tenant').forEach(b=>L.push([1,'warn','Bill unpaid',`${esc(b.cat)} · ${esc(bcode(b.bld))} · AED ${fmt(b.amount)}`,'bills',b.id]));
   return L.sort((a,b)=>a[0]-b[0]);
 }
+let kpiK=null;
+const aexp=a=>(+a.rent||0)*(FX[a.period]||1)+(a.period==='Monthly'?(+a.sewaFee||0)+(+a.wifiFee||0)-(+a.discount||0):0);
+function kpiDetail(k){
+  if(!k)return'';
+  const B=x=>bsel==='all'||x===bsel, X=`<button class="btn ghost mini" data-kpi="${k}">Close ✕</button>`;
+  const head=(t,sub)=>`<div class="card kd"><div class="kdh"><h2>${t}</h2>${X}</div>${sub?`<p class="sub">${sub}</p>`:''}`;
+  const tbl=(hs,rows)=>rows.length?`<table class="stack"><thead><tr>${hs.map(x=>`<th${x[1]?' class="n"':''}>${x[0]}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table>`:'<p class="sub">None.</p>';
+  const sec=(t,n,amt,cls,body)=>`<h3 class="kds ${cls}">${t} · ${n}${amt!=null?' · AED '+fmt(amt):''}</h3>`+body;
+  const sum=(L,f)=>L.reduce((x,y)=>x+f(y),0);
+  const li=(attr,l1,l2,r1,r2)=>`<li ${attr}><div><b>${l1}</b>${l2?`<div class="sub">${l2}</div>`:''}</div><div class="n">${r1}${r2?`<div class="sub">${r2}</div>`:''}</div></li>`;
+  const ul=L=>L.length?`<ul class="kl">${L.join('')}</ul>`:'<p class="sub">None.</p>';
+  if(k==='col'){
+    const ags=S.agreements.filter(a=>B(abld(a))&&(live(a)||S.payments.some(p=>p.agr===a.id&&inM(p.date))));
+    const R=ags.map(a=>{const u=by('units',a.unit),ps=S.payments.filter(p=>p.agr===a.id&&inM(p.date)),pd=sum(ps,p=>+p.paid||0),bal=sum(aopen(a),i=>IS[i.id].bal);return{a,u,ps,pd,bal,ex:live(a)?aexp(a):0}}).sort((x,y)=>sortU(x.u||{},y.u||{}));
+    const full=R.filter(r=>r.pd>0&&r.bal<=0),part=R.filter(r=>r.pd>0&&r.bal>0),none=R.filter(r=>r.pd<=0&&r.bal>0),ok=R.filter(r=>r.pd<=0&&r.bal<=0);
+    const row=r=>li(`data-room="${r.u?.id||''}"`,esc(ulab(r.u))+' · '+esc(tname(r.a.tenant)),r.ps.map(p=>fd(p.date)+' '+esc(p.method||'')+(p.pkind&&p.pkind!=='Rent'?' ('+esc(p.pkind)+')':'')).join(' · ')||('Monthly '+fmt(r.ex)),r.pd?'Paid '+fmt(r.pd):'',r.bal>0?tag('Pending '+fmt(r.bal),'bad'):'');
+
+    return head('Collected · '+esc(month),'Tap a room to open it.')+
+      sec('✅ Fully paid',full.length,sum(full,r=>r.pd),'ok',ul(full.map(row)))+
+      sec('🟡 Partial paid',part.length,sum(part,r=>r.pd),'warn',ul(part.map(row)))+
+      sec('🔴 Not paid',none.length,sum(none,r=>r.bal),'bad',ul(none.map(row)))+
+      sec('⚪ Nothing due yet this month',ok.length,null,'mute',ul(ok.map(row)))+'</div>';
+  }
+  if(k==='occ'){
+    const us=S.units.filter(u=>B(u.bld)).sort(sortU),vac=us.filter(u=>!uagr(u)),occ=us.filter(uagr);
+    return head('Occupancy · '+occ.length+' / '+us.length)+
+      sec('🔴 Vacant',vac.length,null,'bad',ul(vac.map(u=>li(`data-room="${u.id}"`,esc(ulab(u)),esc([u.type,u.furn,u.notes].filter(Boolean).join(' · ')),u.rent?'Ask '+fmt(u.rent):'',''))))+
+      sec('✅ Occupied',occ.length,null,'ok',ul(occ.map(u=>{const a=uagr(u);return li(`data-room="${u.id}"`,esc(ulab(u))+' · '+esc(tname(a.tenant)),a.end?'Ends '+fd(a.end):'',fmt(aexp(a)),esc(a.period||''))})))+'</div>';
+  }
+  if(k==='bal'){
+    const R=S.agreements.filter(a=>B(abld(a))).map(a=>{const op=aopen(a);return{a,u:by('units',a.unit),op,bal:sum(op,i=>IS[i.id].bal),dl:wDeadline(a)}}).filter(r=>r.bal>0).sort((x,y)=>y.bal-x.bal);
+    return head('Rent balance due · AED '+fmt(sum(R,r=>r.bal)),R.length+' rooms pending. Biggest first.')+
+      ul(R.map(r=>{const w=r.op.some(i=>IS[i.id].st==='Warning'),n=r.dl?days(r.dl):null;return li(`data-room="${r.u?.id||''}"`,esc(ulab(r.u))+' · '+esc(tname(r.a.tenant)),'Since '+fd(r.op[0].dueDate)+' · '+r.op.length+' invoice'+(r.op.length>1?'s':''),tag('AED '+fmt(r.bal),w?'bad':'warn'),w&&n!=null?esc(leftTxt(n)):'')}))+'</div>';
+  }
+  if(k==='net'){
+    const ps=S.payments.filter(p=>B(pbld(p))&&inM(p.date)).sort((x,y)=>(x.date||'').localeCompare(y.date||'')),bl=S.bills.filter(b=>B(b.bld)&&inM(b.date)&&b.paidBy!=='Tenant').sort((x,y)=>(x.date||'').localeCompare(y.date||''));
+    const pi=sum(ps,p=>+p.paid||0),bo=sum(bl,b=>+b.amount||0);
+    return head('Net · '+esc(month)+' · AED '+fmt(pi-bo),'Money in − bills & expenses you paid.')+
+      sec('⬇ Money in',ps.length,pi,'ok',ul(ps.map(p=>{const a=by('agreements',p.agr);return li(`data-open="payments" data-id="${p.id}"`,(a?esc(ulab(by('units',a.unit)))+' · '+esc(tname(a.tenant)):'—'),fd(p.date)+' · '+esc(p.method||'')+(p.pkind&&p.pkind!=='Rent'?' · '+esc(p.pkind):''),fmt(p.paid),'')})))+
+      sec('⬆ Bills & expenses',bl.length,bo,'bad',ul(bl.map(b=>li(`data-open="bills" data-id="${b.id}"`,esc(b.cat)+' · '+esc(bcode(b.bld))+(b.unit?' '+esc(ulab(by('units',b.unit))):''),fd(b.date)+(b.desc?' · '+esc(b.desc):''),fmt(b.amount),esc(b.status||'')))))+'</div>';
+  }
+  return'';
+}
 function overview(){
   if(!S.buildings.length)return`<div class="empty">No buildings yet.<br><button class="btn" data-new="buildings">+ Add building</button></div>`;
   const s=stats(bsel),pc=s.exp?Math.min(100,s.col/s.exp*100):0,oc=s.n?s.occ/s.n*100:0;
   let h=`<div class="kpis">
-   <div class="kpi"><span>Collected · ${esc(month)}</span><b>AED ${fmt(s.col)}</b><em>of ${fmt(s.exp)} expected / month</em><div class="meter"><i style="width:${pc}%"></i></div></div>
-   <div class="kpi"><span>Occupancy</span><b>${s.occ} / ${s.n}</b><em>${s.vac} vacant</em><div class="meter"><i style="width:${oc}%"></i></div></div>
-   <div class="kpi money"><span>Rent balance due</span><b>AED ${fmt(s.bal)}</b><em>all open agreements</em></div>
-   <div class="kpi"><span>Net this month</span><b>AED ${fmt(s.net)}</b><em>bills ${fmt(s.util)} · expenses ${fmt(s.ex)}</em></div></div>`;
+   <div class="kpi tap${kpiK==='col'?' on':''}" data-kpi="col"><span>Collected · ${esc(month)}</span><b>AED ${fmt(s.col)}</b><em>of ${fmt(s.exp)} expected / month</em><div class="meter"><i style="width:${pc}%"></i></div></div>
+   <div class="kpi tap${kpiK==='occ'?' on':''}" data-kpi="occ"><span>Occupancy</span><b>${s.occ} / ${s.n}</b><em>${s.vac} vacant</em><div class="meter"><i style="width:${oc}%"></i></div></div>
+   <div class="kpi money tap${kpiK==='bal'?' on':''}" data-kpi="bal"><span>Rent balance due</span><b>AED ${fmt(s.bal)}</b><em>all open agreements</em></div>
+   <div class="kpi tap${kpiK==='net'?' on':''}" data-kpi="net"><span>Net this month</span><b>AED ${fmt(s.net)}</b><em>bills ${fmt(s.util)} · expenses ${fmt(s.ex)}</em></div></div>`+kpiDetail(kpiK);
   if(bsel==='all'){
     h+=`<div class="card"><h2>Each building — separate account</h2><table class="stack"><thead><tr><th>Building</th><th class="n">Units</th><th class="n">Vacant</th><th class="n">Expected</th><th class="n">Collected</th><th class="n">Balance due</th><th class="n">Bills + exp.</th><th class="n">Net</th></tr></thead><tbody>`+
     [...S.buildings].sort((a,b)=>(a.code||'').localeCompare(b.code||'')).map(b=>{const x=stats(b.id);return`<tr data-b="${b.id}"><td><b>${esc(b.name)}</b> <span class="sub">${esc(b.code)}</span></td><td class="n">${x.n}</td><td class="n">${x.vac}</td><td class="n">${fmt(x.exp)}</td><td class="n">${fmt(x.col)}</td><td class="n">${fmt(x.bal)}</td><td class="n">${fmt(x.util+x.ex)}</td><td class="n"><b>${fmt(x.net)}</b></td></tr>`}).join('')+`</tbody></table></div>`;
@@ -667,7 +718,8 @@ document.addEventListener('click',e=>{
   else if(g('#cpy')){navigator.clipboard?.writeText(curDoc?.m?.msg||'').then(()=>toast('Message copied'),()=>toast('Copy not allowed here'))}
   else if(el=g('[data-sign]')){const a=by('agreements',el.dataset.sign);if(a){const {id,...d}=a;write({op:'set',c:'agreements',id,data:{...d,signed:'Signed',signedDate:d.signedDate||iso(new Date())}},'Marked as signed')}}
   else if(el=g('[data-charge]')){const a=by('agreements',el.dataset.charge);if(a){const amt=afee(a),n=S.invoices.filter(i=>i.agr===a.id&&i.kind==='Late fee').length+1;write({op:'set',c:'invoices',id:'fee-'+a.id+'-'+n,data:{ino:'INV-'+String(a.no).replace(/[^A-Za-z0-9]/g,'')+'-F'+n,kind:'Late fee',agr:a.id,dueDate:iso(new Date()),issued:iso(new Date()),amount:amt,notes:'Late payment fine as per agreement clause 5'}},'Fine invoice created')}}
-  else if(el=g('[data-room]')){openRoom(el.dataset.room)}
+  else if(el=g('[data-kpi]')){const k=el.dataset.kpi;kpiK=kpiK===k?null:k;render();if(kpiK)setTimeout(()=>$('.kd')?.scrollIntoView({behavior:'smooth',block:'start'}),50)}
+  else if(el=g('[data-room]')){if(el.dataset.room)openRoom(el.dataset.room)}
   else if(el=g('[data-doc]')){openDoc(el.dataset.doc,el.dataset.id)}
   else if(el=g('[data-bsel]')){bsel=el.dataset.bsel;render()}
   else if(el=g('[data-tab]')){tab=el.dataset.tab;q='';$('#q').value='';render()}
