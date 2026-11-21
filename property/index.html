@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>MRC Properties</title>
 <link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" type="image/png" href="icon-512.png"><meta name="apple-mobile-web-app-title" content="MRC Properties"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="theme-color" content="#0b1026">
 <meta name="robots" content="noindex">
@@ -65,6 +65,18 @@ td.n,th.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .empty .btn{margin-top:12px}
 .ov{position:fixed;inset:0;background:rgba(5,10,30,.55);display:none;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 12px;z-index:9}
 .ov.on{display:flex}
+body{padding-top:env(safe-area-inset-top)}body::before{content:'';position:fixed;left:0;right:0;top:0;height:env(safe-area-inset-top);background:var(--band,#0b1f4a);z-index:50}
+.rg .tag{white-space:normal;display:inline-block;margin-top:4px;max-width:100%}
+.bcard{margin-top:6px}.bh{display:flex;align-items:flex-start;gap:10px;justify-content:space-between}.bh h2{margin:0 0 2px}
+.bstats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.bstats div{background:var(--bg);border-radius:10px;padding:8px 10px}.bstats b{display:block;font:800 18px/1.2 "Red Hat Display",sans-serif}.bstats span{font-size:12px;color:var(--mute)}.bstats .bal b{color:var(--bad,#c5283d)}
+.rooms{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;margin:12px 0 22px}
+.room{background:var(--panel);border:1px solid var(--line);border-left:5px solid #2f8f5b;border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}.room.due{border-left-color:#c5283d}.room.vac{border-left-color:#9aa3b2;opacity:.92}
+.rh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.rh b{font:800 20px/1 "Red Hat Display",sans-serif}.rh .tag{margin-left:auto}
+.rt{font-size:14px;line-height:1.45}.rt a{color:inherit}.bad-t{color:#c5283d;font-weight:600}
+.rg{display:grid;grid-template-columns:1fr 1fr;gap:6px}.rg>div{background:var(--bg);border-radius:9px;padding:7px 9px;min-width:0}.rg span{display:block;font-size:11.5px;color:var(--mute);text-transform:uppercase;letter-spacing:.3px}.rg b{display:block;font-size:15px;margin:1px 0}.rg em{display:block;font-style:normal;font-size:12px;color:var(--mute);line-height:1.35;overflow-wrap:anywhere}.rg .bal b{color:#c5283d}
+.tk{font-size:13px;background:#fff6e5;color:#7a4b00;border-radius:9px;padding:7px 9px}.tk a{color:inherit;text-decoration:underline;cursor:pointer}
+.ra{display:flex;flex-wrap:wrap;gap:6px}.ra .btn{min-height:36px;font-size:13px;padding:0 10px}
+@media(max-width:600px){.rooms{grid-template-columns:1fr}}
 .ov.doc{padding:0;align-items:stretch}.ov.doc .modal{width:min(900px,100%);border-radius:0;padding:0;display:flex;flex-direction:column;min-height:100%;background:#dfe4ec}
 .dvtop{position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:10px;padding:10px 12px 10px 16px;padding-top:max(10px,env(safe-area-inset-top));background:var(--band);color:#fff}.dvtop b{flex:1;font:700 16px/1.2 "Red Hat Display",sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dvtop .x{flex:none;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.14);color:#fff;font-size:20px;cursor:pointer}
 .dvpage{flex:1;padding:12px;overflow:hidden}.pgwrap{margin:0 auto}.page{width:794px;transform-origin:0 0;background:#fff;box-shadow:0 4px 18px rgba(10,20,50,.22);border-radius:3px}
@@ -130,17 +142,18 @@ const SCH={
  buildings:{t:'Building',f:[['code','Short code (e.g. HAM1)'],['name','Building name'],['area','Area / address'],['bname','Official building name (Tasdeeq)'],['district','District'],['sector','Sector'],['plot','Plot no'],['parcel','Parcel no'],['makani','Makani no'],['map','Google Maps link'],['owner','Owner / landlord'],['leaseFrom','Lease from','date'],['leaseTo','Lease to','date'],['leaseCost','Annual lease cost (AED)','num'],['_','Main accounts','h'],['elecAc','Etihad WE main a/c'],['sewAc','Sewerage a/c'],['contact','Watchman / contact'],['notes','Notes','area']]},
  units:{t:'Unit',f:[['bld','Building','bld'],['no','Flat / unit no'],['floor','Floor'],['space','Area (sq m)','num'],['type','Unit type','sel',TYPES],['furn','Furnishing','sel',FURN],['rent','Standard rent (AED)','num'],['period','Rent period','sel',PER],['_','Utilities','h'],['wifi','WiFi','sel',UTIL],['elec','Electricity & water','sel',UTIL],['elecAc','Etihad WE a/c no'],['sew','Sewerage','sel',UTIL],['sewAc','Sewerage a/c no'],['notes','Notes','area']]},
  tenants:{t:'Tenant',f:[['tid','Tenant ID','ro'],['name','Full name'],['nat','Nationality'],['mobile','Mobile'],['whatsapp','WhatsApp'],['email','Email'],['_','ID documents','h'],['eid','Emirates ID no'],['eidExp','Emirates ID expiry','date'],['pp','Passport no'],['ppExp','Passport expiry','date'],['idCopy','ID copy received','sel',YN],['payMode','Usually pays by','sel',METH],['employer','Company / employer'],['emerg','Emergency contact'],['notes','Notes','area']]},
- agreements:{t:'Agreement',f:[['no','Agreement no','ro'],['tenant','Tenant','tenant'],['unit','Unit','unit'],['start','Start date','date'],['end','End date','date'],['period','Rent period','sel',PER],['rent','Rent amount (AED)','num'],['sewaFee','SEWA / sewerage charge per month (AED)','num'],['discount','Discount per month (AED)','num'],['wifiFee','WiFi charge per month (AED)','num'],['deposit','Security deposit (AED)','num'],['cheques','No. of cheques / instalments (yearly)','num'],['dueDay','Rent due date (day of month, 1–28)','num'],['billFrom','Auto-invoice from','date'],['use','Use','sel',['Residential','Commercial']],['occ','Max occupants','num'],['furn','Furnishing','sel',FURN],['_','Utilities — included in rent?','h'],['wifi','WiFi','sel',UTIL],['elec','Electricity & water','sel',UTIL],['ewCap','Electricity & water included up to (AED / month) – tenant pays above this','num'],['sew','Sewerage','sel',UTIL],['muni','Tasdeeq / municipality no'],['signed','Agreement signed','sel',['Not signed','Signed']],['signedDate','Signed on','date'],['special','Special terms (printed on agreement)','area'],['_','Move-in (handover)','h'],['moveIn','Move-in date','date'],['keys','Keys given','num'],['inElec','Electricity meter (in)'],['inWater','Water meter (in)'],['inventory','Items handed over (one per line)','area'],['_','Move-out (vacate)','h'],['noticeDate','Vacate notice date','date'],['vacateDate','Vacate date','date'],['keysBack','Keys returned','num'],['outElec','Electricity meter (out)'],['outWater','Water meter (out)'],['damage','Damages found','area'],['damageAmt','Damage charges (AED)','num'],['utilDue','Utility dues (AED)','num'],['cleanFee','Cleaning charges (AED)','num'],['closed','Closed / vacated','sel',YN],['notes','Notes','area']]},
+ agreements:{t:'Agreement',f:[['no','Agreement no','ro'],['tenant','Tenant','tenant'],['unit','Unit','unit'],['start','Start date','date'],['end','End date','date'],['period','Rent period','sel',PER],['rent','Rent amount (AED)','num'],['sewaFee','SEWA / sewerage charge per month (AED)','num'],['discount','Discount per month (AED)','num'],['wifiFee','WiFi charge per month (AED)','num'],['deposit','Security deposit (AED)','num'],['cheques','No. of cheques / instalments (yearly)','num'],['dueDay','Rent due date (day of month, 1–28)','num'],['billFrom','Auto-invoice from','date'],['use','Use','sel',['Residential','Commercial']],['occ','Max occupants','num'],['furn','Furnishing','sel',FURN],['_','Utilities — included in rent?','h'],['wifi','WiFi','sel',UTIL],['elec','Electricity & water','sel',UTIL],['ewCap','Electricity & water included up to (AED / month) – tenant pays above this','num'],['sew','Sewerage','sel',UTIL],['muni','Tasdeeq / municipality no'],['signed','Agreement signed','sel',['Not signed','Signed']],['signedDate','Signed on','date'],['special','Special terms (printed on agreement)','area'],['_','Move-in (handover)','h'],['moveIn','Move-in date','date'],['keys','Keys given','num'],['inElec','Electricity meter (in)'],['inWater','Water meter (in)'],['inventory','Items handed over (one per line)','area'],['_','Move-out (vacate)','h'],['noticeDate','Vacate notice date','date'],['vacateDate','Vacate date','date'],['keysBack','Keys returned','num'],['outElec','Electricity meter (out)'],['outWater','Water meter (out)'],['damage','Damages found','area'],['damageAmt','Damage charges (AED)','num'],['utilDue','Utility dues (AED)','num'],['cleanFee','Cleaning charges (AED)','num'],['noticeOn','Vacate notice received on','date'],['vacateOn','Vacating on (date)','date'],['closed','Closed / vacated','sel',YN],['notes','Notes','area']]},
  payments:{t:'Rent payment',f:[['rno','Receipt no','ro'],['date','Date received','date'],['inv','Against invoice','inv'],['agr','Agreement','agr'],['paid','Amount paid (AED) – full or part','num'],['method','Method','sel',METH],['chq','Cheque no'],['bank','Bank'],['chqDate','Cheque date','date'],['chqStatus','Cheque status','sel',CHQ],['by','Collected by'],['notes','Notes','area']]},
  invoices:{t:'Invoice',f:[['ino','Invoice no','ro'],['kind','Type','sel',['Rent','Late fee','Bounced cheque fee','Damage','Utility','Other']],['agr','Agreement','agr'],['from','Period from','date'],['to','Period to','date'],['dueDate','Due date','date'],['rent','Rent (AED)','num'],['sewa','SEWA / sewerage (AED)','num'],['wifi','Wi-Fi (AED)','num'],['ew','Electricity & water (AED)','num'],['amount','Total amount (AED) — auto from lines above','num'],['notes','Description / notes','area']]},
+ tickets:{t:'Complaint / maintenance',f:[['unit','Room','unit'],['kind','Type','sel',['Maintenance','Complaint','Request']],['date','Reported on','date'],['desc','Details','area'],['status','Status','sel',['Open','In progress','Done']],['done','Done on','date'],['cost','Cost (AED)','num'],['paidBy','Cost paid by','sel',['Landlord','Tenant']],['notes','Notes','area']]},
  cheques:{t:'Cheque',f:[['agr','Agreement (room)','agr'],['chq','Cheque no'],['bank','Bank'],['chqDate','Cheque date','date'],['amount','Amount (AED)','num'],['status','Status','sel',['Pending','Deposited','Cleared','Bounced','Replaced']],['notes','Notes','area']]},
  settings:{t:'Company details',f:[['brand','Brand name on papers'],['name','Company name (First Party)'],['address','Address'],['phone','Phone'],['email','Email'],['trn','TRN (if VAT registered)'],['licence','Trade licence no'],['signatory','Authorised signatory'],['bank','Bank details for payment','area'],['_','Invoices & fines (printed in agreements)','h'],['notice','Send invoice days before due','num'],['grace','Grace days before fine','num'],['feeFixed','Late fine — fixed (AED)','num'],['feeDay','Late fine — per extra day (AED)','num'],['feeMax','Max fine per instalment (AED)','num'],['bounce','Bounced cheque charge (AED)','num'],['warnDays','Warning notice after days overdue','num'],['vacateNotice','Vacate notice required (days)','num'],['minorMax','Minor maintenance limit paid by tenant, per repair (AED)','num'],['_','Maintenance requests','h'],['maintWa','Maintenance WhatsApp number'],['maintHours','Maintenance timing'],['maintDays','Working days'],['maintOff','Off days'],['maintHrs','Resolved within (hours)','num']]},
  bills:{t:'Bill / expense',f:[['date','Date / bill month','date'],['bld','Building','bld'],['unit','Unit (blank = whole building)','unit'],['cat','Category','sel',CATS],['desc','Description / vendor'],['acc','Account / bill no'],['amount','Amount (AED)','num'],['paidBy','Paid by','sel',['Owner','Tenant']],['status','Status','sel',BST],['recover','Recover from tenant (AED)','num'],['notes','Notes','area']]}
 };
-const TABS=[['overview','Overview'],['docs','Vouchers'],['units','Units'],['tenants','Tenants'],['agreements','Agreements'],['payments','Rent'],['bills','Bills & expenses'],['buildings','Buildings']];
-const S={buildings:[],units:[],tenants:[],agreements:[],payments:[],bills:[],invoices:[],settings:[],cheques:[]};
+const TABS=[['rooms','Rooms'],['overview','Overview'],['docs','Vouchers'],['units','Units'],['tenants','Tenants'],['agreements','Agreements'],['payments','Rent'],['bills','Bills & expenses'],['buildings','Buildings']];
+const S={buildings:[],units:[],tenants:[],agreements:[],payments:[],bills:[],invoices:[],settings:[],cheques:[],tickets:[]};
 const iso=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
-let db=null,canWrite=true,bsel='all',tab='overview',q='',month=iso(new Date()).slice(0,7),online=false;
+let db=null,canWrite=true,bsel='all',tab='rooms',q='',month=iso(new Date()).slice(0,7),online=false;
 const LK='mrc-sb-data-v1',OK='mrc-sb-outbox-v1';
 const ls={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch(_){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(_){}}};
 let outbox=ls.get(OK,[]);
@@ -476,6 +489,45 @@ async function icsExport(){
   if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file]});return}catch(e){if(e.name==='AbortError')return}}
   saveBlob(f);toast('Open the file to add cheque reminders to your calendar')
 }
+function nextDue(a){if(!a)return null;const d=new Date();d.setHours(0,0,0,0);const dd=+a.dueDay||+(a.start||a.billFrom||'').slice(8,10)||1;let n=new Date(d.getFullYear(),d.getMonth(),dd);if(n<d)n=new Date(d.getFullYear(),d.getMonth()+1,dd);const op=a?aopen(a):[];return op.length?op[0].dueDate:iso(n)}
+function roomsView(){
+  const today=iso(new Date()),bs=[...S.buildings].filter(b=>inB(b.id)).sort((a,b)=>(a.code||'').localeCompare(b.code||''));
+  return bs.map(b=>{
+    const us=S.units.filter(u=>u.bld===b.id).sort(sortU).filter(u=>{const a=uagr(u);return hit([u,a&&tname(a.tenant),a&&by('tenants',a.tenant)?.mobile])});
+    if(!us.length)return'';
+    let occ=0,exp=0,got=0,pend=0;
+    const cards=us.map(u=>{
+      const a=uagr(u),t=a?by('tenants',a.tenant)||{}:null,op=a?aopen(a):[],fee=a?afee(a):0,bal=op.reduce((x,i)=>x+IS[i.id].bal,0)+fee;
+      const tk=S.tickets.filter(k=>k.unit===u.id&&k.status!=='Done');const ub=S.bills.filter(x=>x.unit===u.id&&x.status!=='Paid'&&x.paidBy!=='Tenant');
+      if(!a)return`<div class="room vac"><div class="rh"><b>${esc(u.no)}</b><span class="sub">${esc(u.type||'')}${u.furn?' · '+esc(u.furn):''}</span>${tag('Vacant','mute')}</div><div class="sub">${esc(u.notes||'')}</div>${u.rent?`<div>Asking rent: <b>AED ${fmt(u.rent)}</b></div>`:''}${tk.length?`<div class="tk">🛠 ${tk.length} open: ${tk.map(k=>esc(k.desc)).join(' · ')}</div>`:''}<div class="ra"><button class="btn ghost mini" data-new="agreements" data-pre='${esc(JSON.stringify({unit:u.id}))}'>+ New tenant</button><button class="btn ghost mini" data-new="tickets" data-pre='${esc(JSON.stringify({unit:u.id}))}'>🛠 Maintenance</button></div></div>`;
+      occ++;const mon=(+a.rent||0)+(+a.sewaFee||0)+(+a.wifiFee||0)-(+a.discount||0);exp+=a.period==='Yearly'?(+a.rent||0)/12:mon;pend+=bal;
+      const mi=ainv(a).filter(i=>(i.dueDate||'').slice(0,7)===month&&i.kind!=='Late fee').sort((x,y)=>(x.dueDate||'').localeCompare(y.dueDate||''));
+      const mAmt=mi.reduce((x,i)=>x+(+i.amount||0),0),mGot=mi.reduce((x,i)=>x+(IS[i.id]?.got||0),0),mBal=mi.reduce((x,i)=>x+Math.max(0,IS[i.id]?.bal??0),0);got+=mGot;
+      const ps=S.payments.filter(p=>p.agr===a.id).sort((x,y)=>(y.date||'').localeCompare(x.date||'')),lp=ps[0];
+      const mst=!mi.length?tag('No invoice this month','mute'):mBal<=0?tag('Paid','ok'):mGot>0?tag('Partial','warn'):mi.some(i=>(i.dueDate||'')<today)?tag('Unpaid','bad'):tag('Due '+fd(mi[0].dueDate),'mute');
+      const st=a.vacateOn?tag('Vacating '+fd(a.vacateOn),'warn'):ast(a)==='Expired'?tag('Contract expired','bad'):ast(a)==='Expiring'?tag('Expiring '+fd(a.end),'warn'):tag('Occupied','ok');
+      const li=mi[mi.length-1]||ainv(a).sort((x,y)=>(y.dueDate||'').localeCompare(x.dueDate||''))[0];
+      const parts=[['Rent',a.rent],['SEWA',a.sewaFee],['WiFi',a.wifiFee],['Discount',-(+a.discount||0)]].filter(r=>+r[1]);
+      return`<div class="room${bal>0?' due':''}">
+<div class="rh"><b>${esc(u.no)}</b><span class="sub">${u.type&&u.type!==u.no?esc(u.type):''}${u.furn?(u.type&&u.type!==u.no?' · ':'')+esc(u.furn):''}</span>${st}</div>
+<div class="rt"><b>${esc(t.name||'—')}</b>${t.mobile?` · <a href="tel:${esc(t.mobile.replace(/\s/g,''))}">${esc(t.mobile)}</a>`:' · <span class="bad-t">no mobile</span>'}${t.nat?` · ${esc(t.nat)}`:''}${t.eidExp?` · EID exp ${fd(t.eidExp)}`:''}</div>
+<div class="rg">
+<div><span>Rent</span><b>AED ${fmt(a.period==='Yearly'?a.rent:mon)}</b><em>${a.period==='Yearly'?'/ year · '+(a.cheques||1)+' payments':'/ month'}${parts.length>1?' · '+parts.map(r=>r[0]+' '+fmt(r[1])).join(' + '):''}</em></div>
+<div><span>Rent date</span><b>${a.dueDay?a.dueDay+(['th','st','nd','rd'][(a.dueDay%10<4&&(a.dueDay<11||a.dueDay>13))?a.dueDay%10:0])+' every '+(a.period==='Yearly'?'cheque':'month'):'—'}</b><em>Next due: ${fd(nextDue(a))||'—'}</em></div>
+<div><span>${esc(month)}</span><b>${mi.length?'AED '+fmt(mAmt):'—'}</b><em>Paid ${fmt(mGot)} · Balance ${fmt(mBal)} ${mst}</em></div>
+<div class="${bal>0?'bal':''}"><span>Total pending</span><b>AED ${fmt(bal)}</b><em>${op.length} unpaid invoice${op.length===1?'':'s'}${fee?' · fine '+fmt(fee):''}</em></div>
+<div><span>Last payment</span><b>${lp?'AED '+fmt(lp.paid):'—'}</b><em>${lp?fd(lp.date)+' · '+esc(lp.method||''):''}</em></div>
+<div><span>Utilities</span><b>${esc(a.elec||u.elec||'—')}</b><em>${u.elecAc?'Etihad '+esc(u.elecAc):''}${u.sewAc?' · Sewer '+esc(u.sewAc):''}${ub.length?` · <span class="bad-t">${ub.length} unpaid bill (AED ${fmt(ub.reduce((x,y)=>x+(+y.amount||0),0))})</span>`:''}</em></div>
+</div>
+${a.noticeOn||a.vacateOn?`<div class="tk">📦 Vacate notice${a.noticeOn?' received '+fd(a.noticeOn):''}${a.vacateOn?' · leaving '+fd(a.vacateOn):''}</div>`:''}
+${tk.length?`<div class="tk">🛠 ${tk.length} open: ${tk.map(k=>`<a data-open="tickets" data-id="${k.id}">${esc(k.kind)}: ${esc(k.desc)} (${esc(k.status)}${k.date?', '+fd(k.date):''})</a>`).join(' · ')}</div>`:''}
+<div class="ra">${li?`<button class="btn mini" data-doc="invoice" data-id="${li.id}">🧾 Invoice</button>`:''}${bal>0?`<button class="btn ghost mini" data-doc="due" data-id="${a.id}">Due notice</button><button class="btn ghost mini" data-doc="warning" data-id="${a.id}">Warning</button>`:''}${lp?`<button class="btn ghost mini" data-doc="receipt" data-id="${lp.id}">Receipt</button>`:''}<button class="btn ghost mini" data-new="payments" data-pre='${esc(JSON.stringify({agr:a.id,inv:op[0]?.id||'',paid:op[0]?IS[op[0].id].bal:''}))}'>+ Payment</button><button class="btn ghost mini" data-new="tickets" data-pre='${esc(JSON.stringify({unit:u.id}))}'>🛠 Complaint</button><button class="btn ghost mini" data-doc="agreement" data-id="${a.id}">Agreement</button><button class="btn ghost mini" data-doc="vacate" data-id="${a.id}">Vacate</button><button class="btn ghost mini" data-open="agreements" data-id="${a.id}">Edit</button></div>
+</div>`}).join('');
+    const vac=us.length-occ;
+    return`<div class="card bcard"><div class="bh"><div><h2>${esc(b.name)}</h2><div class="sub">${esc(baddr(b)||b.area||'')}</div></div><a class="btn ghost mini" target="_blank" rel="noopener" href="${esc(bmap(b))}">📍 Map</a></div>
+<div class="bstats"><div><b>${us.length}</b><span>Rooms</span></div><div><b>${occ}</b><span>Occupied</span></div><div><b>${vac}</b><span>Vacant</span></div><div><b>${fmt(exp)}</b><span>Rent / month</span></div><div><b>${fmt(got)}</b><span>Collected ${esc(month)}</span></div><div class="${pend>0?'bal':''}"><b>${fmt(pend)}</b><span>Pending</span></div></div></div><div class="rooms">${cards}</div>`
+  }).join('')||'<div class="empty">No rooms.</div>'
+}
 function payTop(){
   const ps=S.payments.filter(p=>inB(pbld(p))&&inM(p.date)),tot={};ps.forEach(p=>{const m=p.method||'Not set';tot[m]=(tot[m]||0)+(+p.paid||0)});
   const ch=S.payments.filter(p=>inB(pbld(p))&&p.method==='Cheque'&&p.chqStatus!=='Cleared').sort((a,b)=>(a.chqDate||'').localeCompare(b.chqDate||''));
@@ -499,9 +551,9 @@ function render(){
   const bs=[...S.buildings].sort((a,b)=>(a.code||'').localeCompare(b.code||''));
   $('#chips').innerHTML=[['all','All buildings'],...bs.map(b=>[b.id,b.name||b.code])].map(([id,n])=>`<button data-bsel="${id}" aria-pressed="${bsel===id}">${esc(n)}</button>`).join('');
   $('#tabs').innerHTML=TABS.map(([k,n])=>`<button role="tab" data-tab="${k}" aria-selected="${tab===k}">${n}</button>`).join('');
-  $('#q').hidden=tab==='overview';$('#month').hidden=!['overview','payments','bills','docs'].includes(tab);
-  $('#add').textContent='+ '+(tab==='overview'?'Rent payment':tab==='docs'?'Invoice':SCH[tab].t);
-  $('#main').innerHTML=tab==='overview'?overview():LIST[tab]();
+  $('#q').hidden=tab==='overview';$('#month').hidden=!['overview','rooms','payments','bills','docs'].includes(tab);
+  $('#add').textContent='+ '+(tab==='overview'?'Rent payment':tab==='rooms'?'Complaint / maintenance':tab==='docs'?'Invoice':SCH[tab].t);
+  $('#main').innerHTML=tab==='overview'?overview():tab==='rooms'?roomsView():LIST[tab]();
 }
 function opts(t,v){
   const o=(val,lab)=>`<option value="${esc(val)}"${val===v?' selected':''}>${esc(lab)}</option>`;
@@ -522,7 +574,7 @@ function field([k,l,t,o],r){
 }
 function defaults(c){
   const b=bsel==='all'?'':bsel,t=iso(new Date());
-  return{units:{bld:b,period:'Monthly',furn:'Unfurnished'},tenants:{tid:nextId('tenants','tid','T-'),idCopy:'No'},agreements:{no:nextId('agreements','no','AG-'),period:'Monthly',start:t,dueDay:Math.min(28,new Date().getDate()),billFrom:t,use:'Residential',signed:'Not signed',closed:'No'},payments:{rno:nextId('payments','rno','R-'),date:t,method:'Cash'},invoices:{ino:'INV-M'+String(Math.max(0,...S.invoices.map(i=>String(i.ino||'').startsWith('INV-M')?+i.ino.slice(5)||0:0))+1).padStart(4,'0'),kind:'Rent',dueDate:t},settings:{...CO_DEF},cheques:{status:'Pending'},bills:{date:t,bld:b,paidBy:'Owner',status:'Unpaid'},buildings:{}}[c];
+  return{units:{bld:b,period:'Monthly',furn:'Unfurnished'},tenants:{tid:nextId('tenants','tid','T-'),idCopy:'No'},agreements:{no:nextId('agreements','no','AG-'),period:'Monthly',start:t,dueDay:Math.min(28,new Date().getDate()),billFrom:t,use:'Residential',signed:'Not signed',closed:'No'},payments:{rno:nextId('payments','rno','R-'),date:t,method:'Cash'},invoices:{ino:'INV-M'+String(Math.max(0,...S.invoices.map(i=>String(i.ino||'').startsWith('INV-M')?+i.ino.slice(5)||0:0))+1).padStart(4,'0'),kind:'Rent',dueDate:t},settings:{...CO_DEF},cheques:{status:'Pending'},tickets:{status:'Open',kind:'Maintenance',date:iso(new Date())},bills:{date:t,bld:b,paidBy:'Owner',status:'Unpaid'},buildings:{}}[c];
 }
 function history(c,r){
   if(c==='tenants'){const ag=S.agreements.filter(a=>a.tenant===r.id),ps=S.payments.filter(p=>ag.some(a=>a.id===p.agr));
@@ -532,8 +584,8 @@ function history(c,r){
   return'';
 }
 let cur=null;
-function openForm(c,id){
-  const rec=id?by(c,id):null,r=rec?{...rec}:defaults(c);cur={c,id};
+function openForm(c,id,pre){
+  const rec=id?by(c,id):null,r=rec?{...rec}:{...defaults(c),...(pre||{})};cur={c,id};
   const DB={agreements:[['agreement','Agreement paper'],['handover','Move-in form'],['vacate','Vacate & settlement'],['due','Due notice'],['warning','Warning notice']],payments:[['receipt','Receipt voucher']],invoices:[['invoice','Invoice']]}[c];
   $('#modal').innerHTML=`<h2>${rec?'Edit':'New'} ${SCH[c].t.toLowerCase()}</h2>${rec&&DB?`<div class="docb">${DB.map(([k,l])=>`<button type="button" class="btn ghost" data-doc="${k}" data-id="${rec.id}">${l}</button>`).join('')}</div>`:''}<form id="frm"><div class="grid">${SCH[c].f.map(f=>field(f,r)).join('')}</div>${c==='payments'?'<div id="payinfo" class="card" style="margin:10px 0;padding:10px 12px"></div>':''}
    <div class="acts">${rec?'<button type="button" class="btn del" id="del">Delete</button>':''}<span class="sp"></span><button type="button" class="btn ghost" id="cancel">Cancel</button><button class="btn" ${canWrite?'':'disabled'}>Save</button></div></form>${rec?history(c,rec):''}`;
@@ -577,8 +629,8 @@ document.addEventListener('click',e=>{
   else if(el=g('[data-tab]')){tab=el.dataset.tab;q='';$('#q').value='';render()}
   else if(el=g('[data-b]')){bsel=el.dataset.b;render()}
   else if((el=g('[data-open]'))&&!g('#modal')){openForm(el.dataset.open,el.dataset.id)}
-  else if(el=g('[data-new]')){openForm(el.dataset.new)}
-  else if(g('#add')){openForm(tab==='overview'?'payments':tab==='docs'?'invoices':tab)}
+  else if(el=g('[data-new]')){openForm(el.dataset.new,null,el.dataset.pre?JSON.parse(el.dataset.pre):null)}
+  else if(g('#add')){openForm(tab==='overview'?'payments':tab==='rooms'?'tickets':tab==='docs'?'invoices':tab)}
   else if(g('#cancel')||e.target===$('#ov'))close();
   else if(el=g('#del')){if(el.dataset.sure){const {c,id}=cur;write({op:'del',c,id},'Deleted')}else{el.dataset.sure=1;el.textContent='Tap again to delete'}}
 });
@@ -597,7 +649,7 @@ document.addEventListener('submit',e=>{
   e.preventDefault();if(!cur)return;const {c,id}=cur,fd=new FormData(e.target),o={};
   SCH[c].f.forEach(([k,,t])=>{if(t==='h')return;let v=(fd.get(k)??'').toString().trim();o[k]=t==='num'&&v!==''?+v:v});
   if(c==='invoices'){const t=['rent','sewa','wifi','ew'].reduce((a,k)=>a+(+o[k]||0),0);if(t>0)o.amount=Math.round(t*100)/100}
-  const need={units:['bld','no'],tenants:['name'],agreements:['tenant','unit','start'],payments:['agr','paid'],bills:['bld','amount'],buildings:['code','name'],invoices:['agr','dueDate','amount'],settings:['name'],cheques:['agr','chqDate','amount']}[c];
+  const need={units:['bld','no'],tenants:['name'],agreements:['tenant','unit','start'],payments:['agr','paid'],bills:['bld','amount'],buildings:['code','name'],invoices:['agr','dueDate','amount'],settings:['name'],cheques:['agr','chqDate','amount'],tickets:['unit','desc']}[c];
   const miss=need.filter(k=>o[k]===''||o[k]==null);
   if(miss.length){toast('Please fill: '+miss.map(k=>SCH[c].f.find(f=>f[0]===k)[1]).join(', '));return}
   o.updatedAt=new Date().toISOString();
