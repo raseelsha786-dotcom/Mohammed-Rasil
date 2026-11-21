@@ -58,8 +58,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 a.kpi{text-decoration:none;color:inherit;display:block}.okc{color:#1f7a3d}
 .tdb h2{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.tdb h2 .cnt{background:#eef0f6;border-radius:99px;padding:1px 9px;font-size:14px}.tdb h2 .amt{margin-left:auto;font-size:15px}
 .tdb.bad{border-left:4px solid #c8325a}.tdb.warn{border-left:4px solid #e0a106}.tdb.ok{border-left:4px solid #2e8b57}
-.bd{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px;vertical-align:middle;flex:none}
-.chips button{border-color:var(--bc,#3b4f86)}.chips button[aria-pressed=true]{background:var(--bc);color:#fff;border-color:var(--bc)}.chips button[data-bsel=all][aria-pressed=true]{color:var(--band)}.chips button[aria-pressed=true] .bd{background:#fff!important}
+.bdot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px;vertical-align:middle;flex:none}
+.chips button{border-color:var(--bc,#3b4f86)}.chips button[aria-pressed=true]{background:var(--bc);color:#fff;border-color:var(--bc)}.chips button[data-bsel=all][aria-pressed=true]{color:var(--band)}.chips button[aria-pressed=true] .bdot{background:#fff!important}
 .tabs button[aria-selected=true]{border-color:var(--tc,var(--acc))!important}.tabs button:hover{color:var(--tc,#fff)}
 .bcard{border-top:6px solid var(--bc)!important;background:color-mix(in srgb,var(--bc) 4%,#fff)}.bcard>.bh h2{color:var(--bc)}.rooms[style] .room{border-top:4px solid var(--bc)}.rooms[style] .room .rk tr:first-child td{color:var(--bc);font-weight:700}.bcard .bstats div{background:color-mix(in srgb,var(--bc) 9%,#fff)}
 tr.brow td:first-child{border-left:4px solid var(--bc)}
@@ -533,7 +533,7 @@ function todayView(){
 let kpiK=null;
 const BCOL={HAM1:'#2563eb',NAK2:'#16a34a',RAW2:'#ea580c',RUM2:'#9333ea'},BPAL=['#0891b2','#db2777','#ca8a04','#4f46e5'];
 const bcol=id=>{const b=by('buildings',id);if(!b)return'#64748b';return BCOL[b.code]||BPAL[S.buildings.indexOf(b)%BPAL.length]};
-const bdot=id=>`<i class="bd" style="background:${bcol(id)}"></i>`;
+const bdot=id=>`<i class="bdot" style="background:${bcol(id)}"></i>`;
 const TCOL={home:'#f59e0b',rooms:'#22c55e',overview:'#38bdf8',docs:'#f472b6',units:'#a78bfa',tenants:'#2dd4bf',agreements:'#fb923c',payments:'#4ade80',bills:'#f87171',buildings:'#93c5fd'};
 const RENT=u=>u.forRent!=='No';
 const actr=a=>a.contract||(a.period==='Yearly'?'Yearly':'Monthly');
