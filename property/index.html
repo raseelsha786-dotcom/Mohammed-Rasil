@@ -503,7 +503,7 @@ function todayView(){
     else if(nr&&st==='Expiring')fu.push([1,a,'Not renewing · leaving '+fd(a.end)+' ('+d+'d) — plan handover & find new tenant','warn']);
     else if(st==='Expired')fu.push([0,a,'Expired '+fd(a.end)+' — renew or close','bad']);
     else if(st==='Expiring')fu.push([1,a,'Ends in '+d+'d ('+fd(a.end)+') — renewal','warn']);
-    if(!nr&&v!=null&&v>=0&&v<=30&&st!=='Closed')fu.push([1,a,'Vacating '+fd(a.vacateOn)+' ('+v+'d)','warn']);
+    if((!nr||!a.end)&&v!=null&&v>=0&&v<=45&&st!=='Closed')fu.push([1,a,'Leaving '+fd(a.vacateOn)+' ('+v+'d) — plan handover & find new tenant','warn']);
     if(live(a)&&/pending|needed/i.test(tname(a.tenant)))fu.push([2,a,'Tenant name / mobile missing','mute'])});
   fu.sort((x,y)=>x[0]-y[0]);
   const ubill=S.bills.filter(b=>inB(b.bld)&&b.status!=='Paid'&&b.paidBy!=='Tenant');
