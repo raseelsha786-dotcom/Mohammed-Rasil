@@ -175,7 +175,11 @@ const SCH={
 const TABS=[['home','Today'],['rooms','Rooms'],['overview','Overview'],['docs','Vouchers'],['units','Units'],['tenants','Tenants'],['agreements','Agreements'],['payments','Rent'],['bills','Bills & expenses'],['buildings','Buildings']];
 const S={buildings:[],units:[],tenants:[],agreements:[],payments:[],bills:[],invoices:[],settings:[],cheques:[],tickets:[]};
 const iso=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
-let db=null,canWrite=true,bsel='all',tab='home',q='',month=iso(new Date()).slice(0,7),online=false;
+// Property records use the UAE calendar. Keep date-only values compatible with D and iso.
+const uaeCalendar=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Dubai',year:'numeric',month:'2-digit',day:'2-digit'});
+const uaeToday=(now=new Date())=>uaeCalendar.format(now);
+const todayDate=()=>D(uaeToday());
+let db=null,canWrite=true,bsel='all',tab='home',q='',month=uaeToday().slice(0,7),online=false;
 const LK='mrc-sb-data-v1',OK='mrc-sb-outbox-v1';
 const ls={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch(_){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(_){}}};
 let outbox=ls.get(OK,[]);
@@ -184,7 +188,7 @@ const newId=()=>'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,7
 const applyOp=o=>{const L=S[o.c].filter(x=>x.id!==o.id);if(o.op==='set')L.push({id:o.id,...o.data});S[o.c]=L};
 const save=()=>{ls.set(LK,S);ls.set(OK,outbox)};
 const D=s=>s?new Date(s+'T00:00:00'):null;
-const days=s=>{if(!s)return null;const t=new Date();t.setHours(0,0,0,0);return Math.round((D(s)-t)/864e5)};
+const days=s=>{if(!s)return null;return Math.round((D(s)-todayDate())/864e5)};
 const fmt=n=>(+n||0).toLocaleString('en-US',{maximumFractionDigits:0});
 const fd=s=>s?D(s).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}):'';
 const by=(c,id)=>S[c].find(x=>x.id===id);
@@ -215,7 +219,7 @@ const co=()=>({...CO_DEF,...(by('settings','company')||{})});
 const addM=(d,n)=>{const y=d.getFullYear(),m=d.getMonth()+n,dim=new Date(y,m+1,0).getDate();return new Date(y,m,Math.min(d.getDate(),dim))};
 function sched(a){
   const st=a.start||a.billFrom;if(!st||!a.rent||a.period==='Daily')return[];
-  const s=D(st),e=a.end?D(a.end):addM(new Date(),2),out=[];
+  const s=D(st),e=a.end?D(a.end):addM(todayDate(),2),out=[];
   const n=Math.max(1,+a.cheques||1),step=a.period==='Weekly'?null:a.period==='Yearly'?12/n:1;
   const rent=a.period==='Yearly'?Math.round((+a.rent/n)*100)/100:+a.rent,sewa=a.period==='Monthly'?(+a.sewaFee||0):0,wifi=a.period==='Monthly'?(+a.wifiFee||0):0,disc=a.period==='Monthly'?(+a.discount||0):0,amt=rent+sewa+wifi-disc;
   const dd=Math.min(28,Math.max(1,Math.round(+a.dueDay||0)));
@@ -254,7 +258,7 @@ function autoInvoice(){
   S.agreements.forEach(a=>{if(a.closed==='Yes')return;
     sched(a).forEach(it=>{if(days(it.due)>lead)return;if(a.billFrom&&it.due<a.billFrom)return;
       const id='inv-'+a.id+'-'+it.due;if(by('invoices',id))return;
-      const o={op:'set',c:'invoices',id,data:{ino:'INV-'+String(a.no||'').replace(/[^A-Za-z0-9]/g,'')+'-'+it.due.slice(2,7).replace('-',''),kind:'Rent',agr:a.id,from:it.from,to:it.to,dueDate:it.due,amount:it.amt,rent:it.rent,sewa:it.sewa,wifi:it.wifi,disc:it.disc||0,auto:'Yes',issued:iso(new Date())}};
+      const o={op:'set',c:'invoices',id,data:{ino:'INV-'+String(a.no||'').replace(/[^A-Za-z0-9]/g,'')+'-'+it.due.slice(2,7).replace('-',''),kind:'Rent',agr:a.id,from:it.from,to:it.to,dueDate:it.due,amount:it.amt,rent:it.rent,sewa:it.sewa,wifi:it.wifi,disc:it.disc||0,auto:'Yes',issued:uaeToday()}};
       applyOp(o);outbox.push(o);n++});
   });
   if(n){save();render();toast(n+' invoice'+(n>1?'s':'')+' created automatically');flush()}
@@ -291,7 +295,7 @@ function mkDoc(kind,id){
   const c=co();
   if(['agreement','handover','vacate','due','warning','paid','unpaid','vnotice','fine'].includes(kind)){
     const a=by('agreements',id);if(!a)return null;const x=ctx(a),sc=sched(a);
-    if(kind==='agreement')return{title:'Tenancy Agreement',no:a.no,date:a.signedDate||iso(new Date()),x,file:a.no+'_Agreement',blocks:[
+    if(kind==='agreement')return{title:'Tenancy Agreement',no:a.no,date:a.signedDate||uaeToday(),x,file:a.no+'_Agreement',blocks:[
       {t:'h',v:'Parties'},{t:'kv',r:partyRows(x)},{t:'h',v:'Premises'},{t:'kv',r:premRows(x)},
       {t:'h',v:'Rent & term'},{t:'kv',r:[[a.end?'Start / End':'Start date',a.end?fd(a.start)+'  to  '+fd(a.end):(fd(a.start||a.billFrom)||'—')+'  (monthly – renews each month)'],['Rent',AED(a.rent)+' '+(a.period||'')],...(+a.sewaFee?[['SEWA / sewerage',AED(a.sewaFee)+' per month']]:[]),...(+a.wifiFee?[['WiFi',AED(a.wifiFee)+' per month']]:[]),...(+a.sewaFee||+a.wifiFee?[['Total per month',AED((+a.rent||0)+(+a.sewaFee||0)+(+a.wifiFee||0))]]:[]),['Security deposit',AED(a.deposit)],['Rent due date',+a.dueDay?'Day '+(+a.dueDay)+' of every month':'Same date as start, every '+((a.period||'Monthly').replace('ly','').toLowerCase())],['Payment',(a.period==='Yearly'?(a.cheques||1)+' instalment(s)':(a.period||'Monthly')+' in advance')],['Tasdeeq no',a.muni||'']]},
       {t:'h',v:'Terms & conditions'},{t:'ol',r:terms(x)},
@@ -307,7 +311,7 @@ function mkDoc(kind,id){
       msg:`Dear ${x.t.name||'Tenant'},\n\nWelcome to your new home! 🏠\n*Move-in / Handover Form HO-${a.no}*\n${x.unit}${x.b.name?' · '+x.b.name:''}\n\nPlease check the items listed and report any issue within 3 days.\n\nThank you.\n\n${c.brand||c.name}${c.phone?'\n📞 '+c.phone:''}`}}
     if(kind==='vacate'){const bal=Math.max(0,abal(a)),fee=afee(a),dmg=+a.damageAmt||0,ut=+a.utilDue||0,cl=+a.cleanFee||0,dep=+a.deposit||0,net=dep-bal-fee-dmg-ut-cl;
       const nd=a.noticeDate&&a.vacateDate?Math.round((D(a.vacateDate)-D(a.noticeDate))/864e5):null;
-      return{title:'Vacating Notice & Final Settlement',no:'VC-'+a.no,date:a.vacateDate||iso(new Date()),x,file:a.no+'_Vacate',blocks:[
+      return{title:'Vacating Notice & Final Settlement',no:'VC-'+a.no,date:a.vacateDate||uaeToday(),x,file:a.no+'_Vacate',blocks:[
       {t:'kv',r:[['Tenant',x.t.name||''],['Emirates ID',x.t.eid||''],['Agreement',a.no+' ('+fd(a.start)+' – '+fd(a.end)+')'],...premRows(x).slice(0,2),['Notice given on',fd(a.noticeDate)||'____________'],['Vacating date',fd(a.vacateDate)||'____________'],['Notice period',nd==null?'':nd+' days'+(nd<(+c.vacateNotice||30)?' (less than required '+(+c.vacateNotice||30)+' days)':'')]]},
       {t:'h',v:'Inspection'},{t:'kv',r:[['Keys returned',(a.keysBack||'____')+' of '+(a.keys||'____')],['Electricity meter (in / out)',(a.inElec||'—')+'  /  '+(a.outElec||'________')],['Water meter (in / out)',(a.inWater||'—')+'  /  '+(a.outWater||'________')],['Damages found',a.damage||'None noted']]},
       {t:'h',v:'Final settlement'},{t:'tb',h:['Item','','Amount'],w:[110,20,50],r:[['Security deposit held','+',AED(dep)],['Unpaid rent & invoices','–',AED(bal)],['Late fines (not yet invoiced)','–',AED(fee)],['Damage charges','–',AED(dmg)],['Utility dues','–',AED(ut)],['Cleaning charges','–',AED(cl)]]},
@@ -315,7 +319,7 @@ function mkDoc(kind,id){
       {t:'p',v:`The Tenant has vacated and handed over vacant possession of the unit with all keys. ${net>=0?'Upon payment of the refund above':'Upon receipt of the amount payable above'}, both parties confirm full and final settlement and have no further claims against each other in respect of this tenancy, except for any utility bills issued later for the period of occupation. The Tenant shall cancel any utility accounts and the Tasdeeq registration in their name.`},sigs(x)],
       msg:`Dear ${x.t.name||'Tenant'},\n\n*Final Settlement – ${x.unit}${x.b.name?' · '+x.b.name:''}*\n${net>=0?'Refund to you':'Amount payable by you'}: *${AED(Math.abs(net))}*\n\nDetails are in the attached statement.\n\nThank you.\n\n${c.brand||c.name}${c.phone?'\n📞 '+c.phone:''}`}}
     if(kind==='paid'||kind==='unpaid'||kind==='vnotice'||kind==='fine'){const all=ainv(a).filter(i=>IS[i.id]).sort((p,q)=>(q.dueDate||'').localeCompare(p.dueDate||''));
-      const head0=[{t:'kv',r:[['To',x.t.name||''],['Mobile',x.t.mobile||''],['Unit',x.unit+' · '+(x.b.name||'')],['Agreement',a.no]]}];const today=iso(new Date());
+      const head0=[{t:'kv',r:[['To',x.t.name||''],['Mobile',x.t.mobile||''],['Unit',x.unit+' · '+(x.b.name||'')],['Agreement',a.no]]}];const today=uaeToday();
       if(kind==='fine'){const fl=all.filter(i=>IS[i.id].fee>0).sort((p,q)=>(p.dueDate||'').localeCompare(q.dueDate||'')),gross=fl.reduce((s,i)=>s+IS[i.id].fee,0),billed=all.filter(i=>i.kind==='Late fee').reduce((s,i)=>s+(+i.amount||0),0),net=afee(a),g=+c.grace||0;
         return{title:'Late Payment Fine Notice',no:'FN-'+a.no+'-'+today.replace(/-/g,''),date:today,x,file:a.no+'_Fine',blocks:[...head0,
         {t:'p',v:fl.length?`As per Clause 5 of your tenancy agreement, rent paid more than ${g} days after the due date attracts a late payment fine. Fines on this tenancy:`:'No late payment fine applies to this tenancy as of '+fd(today)+'.'},
@@ -337,7 +341,7 @@ function mkDoc(kind,id){
           {t:'tot',l:'Total unpaid',v:AED(tot)},...(fee?[{t:'tot',l:'Late fines accrued',v:AED(fee)},{t:'tot',l:'Total payable',v:AED(tot+fee)}]:[])]:[]),
         {t:'p',v:un.length?'Kindly settle the amount on or before the due dates shown. '+feeText(c):'Thank you.'},...(c.bank&&un.length?[{t:'p',v:'Bank details: '+c.bank}]:[]),{t:'sig',p:[['For '+c.name,c.signatory]]}],
         msg:`Dear ${x.t.name||'Tenant'},\n\n📋 *UNPAID RENT STATEMENT*\n🏠 ${x.unit}${x.b.name?' · '+x.b.name:''}\n${un.length?un.map(i=>`• ${i.ino} – due ${fd(i.dueDate)}: ${AED(IS[i.id].bal)}`).join('\n')+`\n*Total: ${AED(tot+fee)}*${fee?` (incl. fine ${AED(fee)})`:''}`:'No unpaid rent. Thank you!'}\n\n${c.brand||c.name}${c.phone?'\n📞 '+c.phone:''}`}}
-      const nd=+c.vacateNotice||30,by_=a.vnBy||(()=>{const d=new Date();d.setDate(d.getDate()+nd);return iso(d)})(),un=all.filter(i=>IS[i.id].bal>0.005),tot=un.reduce((s,i)=>s+IS[i.id].bal,0)+afee(a);
+      const nd=+c.vacateNotice||30,by_=a.vnBy||(()=>{const d=todayDate();d.setDate(d.getDate()+nd);return iso(d)})(),un=all.filter(i=>IS[i.id].bal>0.005),tot=un.reduce((s,i)=>s+IS[i.id].bal,0)+afee(a);
       const why=a.vnReason||(tot>0?'Non-payment of rent':'End of tenancy period');
       return{title:'Notice to Vacate',no:'NV-'+a.no+'-'+today.replace(/-/g,''),date:today,x,file:a.no+'_NoticeToVacate',blocks:[...head0,
         {t:'kv',r:[['Tenancy',fd(a.start)+(a.end?' – '+fd(a.end):' (monthly)')],['Reason',why],['Vacate on or before',fd(by_)],...(tot>0?[['Amount outstanding',AED(tot)]]:[])]},
@@ -349,12 +353,12 @@ function mkDoc(kind,id){
     const op=aopen(a),tot=op.reduce((s,i)=>s+IS[i.id].bal,0),fee=afee(a),mx=op.reduce((m,i)=>Math.max(m,IS[i.id].od),0);
     const tb={t:'tb',h:['Invoice','Period','Due date','Days late','Balance'],w:[38,52,30,22,38],r:op.map(i=>[i.ino,fd(i.from)+' – '+fd(i.to),fd(i.dueDate),IS[i.id].od,AED(IS[i.id].bal)])};
     const head=[{t:'kv',r:[['To',x.t.name||''],['Mobile',x.t.mobile||''],['Unit',x.unit+' · '+(x.b.name||'')],['Agreement',a.no]]}];
-    if(kind==='due')return{title:'Rent Due Notice',no:'DN-'+a.no+'-'+iso(new Date()).replace(/-/g,''),date:iso(new Date()),x,file:a.no+'_DueNotice',blocks:[...head,
+    if(kind==='due')return{title:'Rent Due Notice',no:'DN-'+a.no+'-'+uaeToday().replace(/-/g,''),date:uaeToday(),x,file:a.no+'_DueNotice',blocks:[...head,
       {t:'p',v:`This is a reminder that the following amount${op.length>1?'s are':' is'} outstanding under your tenancy agreement:`},tb,{t:'tot',l:'Total rent outstanding',v:AED(tot)},
       ...(fee?[{t:'tot',l:'Late fines accrued (Clause 5)',v:AED(fee)},{t:'tot',l:'Total payable',v:AED(tot+fee)}]:[]),
       {t:'p',v:`Kindly pay the full amount immediately. ${feeText(c)} Please ignore this notice if you have already paid.`},{t:'sig',p:[['For '+c.name,c.signatory]]}],
       msg:`Dear ${x.t.name||'Tenant'},\n\n⏰ *RENT DUE NOTICE*\n🏠 ${x.unit}${x.b.name?' · '+x.b.name:''}\nAmount due: *${AED(tot+fee)}*${mx?`\nDays late: ${mx}`:''}\n\nPlease pay immediately to avoid further fines.\n\nThank you.\n\n${c.brand||c.name}${c.phone?'\n📞 '+c.phone:''}`};
-    return{title:'Warning Notice — Non-payment of Rent',no:'WN-'+a.no+'-'+iso(new Date()).replace(/-/g,''),date:iso(new Date()),x,file:a.no+'_Warning',blocks:[...head,
+    return{title:'Warning Notice — Non-payment of Rent',no:'WN-'+a.no+'-'+uaeToday().replace(/-/g,''),date:uaeToday(),x,file:a.no+'_Warning',blocks:[...head,
       {t:'p',v:`Despite earlier reminders, the following rent remains unpaid${mx?` for up to ${mx} days`:''}:`},tb,{t:'tot',l:'Rent outstanding',v:AED(tot)},{t:'tot',l:'Late fines (Clause 5)',v:AED(fee)},{t:'tot',l:'Total payable',v:AED(tot+fee)},
       {t:'p',v:`You are hereby formally notified to pay the total amount within ${+c.payWithin||3} (${NUMW[+c.payWithin||3]||''}) days from the date of this notice, i.e. on or before ${fd(wDeadline(a))||''}. If payment is not received, the Lessor will terminate the tenancy agreement and apply to the competent rental dispute authority in Ajman for eviction and recovery of all amounts due, together with fines, fees and legal costs, as provided in the tenancy agreement and Ajman Law No. (2) of 2017 regulating landlord-tenant relations.`},
       {t:'p',v:'This notice is issued without prejudice to any other rights of the Lessor.'},{t:'sig',p:[['For '+c.name,c.signatory],['Received by Tenant',x.t.name||'']]}],
@@ -364,8 +368,8 @@ function mkDoc(kind,id){
     let _rem=(+st.got||0)+(+i.disc||0);const _g=+c.grace||0,_late=i.dueDate?-days(i.dueDate):0,_fineFrom=i.dueDate?iso(new Date(D(i.dueDate).getTime()+_g*864e5)):'';
     const _note=(st.bal<=0.005?`Paid in full. Total in words: ${words(i.amount)}. Thank you.`:(st.got>0?`Balance due in words: ${words(st.bal)}. `:`Amount in words: ${words(i.amount)}. `)+(_late>0?`OVERDUE since ${fd(i.dueDate)} (${_late} day${_late>1?'s':''} late). Please pay AED ${fmt2(st.bal)} immediately. `+(_late>=_g?'A late fine applies as per your tenancy agreement.':`A late fine applies from ${fd(_fineFrom)} as per your tenancy agreement.`):`Please pay on or before ${fd(i.dueDate)}. A late fine applies after ${_g} days as per your tenancy agreement.`))+(c.bank?' Bank: '+c.bank:'');
     const items=((+i.rent||0)+(+i.sewa||0)+(+i.wifi||0)+(+i.ew||0)>0?[['Rent – '+x.unit,+i.rent],['SEWA / Sewerage',+i.sewa],['Wi-Fi',+i.wifi],['Electricity & Water',+i.ew],['Discount',-(+i.disc||0)]].filter(r=>+r[1]):[[(i.kind==='Rent'||!i.kind?'Rent – '+x.unit:i.kind)+(i.notes?' – '+i.notes:''),+i.amount]]).map(r=>{const amt=+r[1];if(amt<=0||!(st.got>0))return[r[0],fmt2(amt)];const pd=Math.min(_rem,amt);_rem-=pd;return[r[0]+(pd>=amt-0.005?' (Paid)':pd>0?' (Part paid – '+fmt2(amt-pd)+' due)':' (Unpaid)'),fmt2(amt)]});
-    return{title:c.trn?'TAX INVOICE':'RENT INVOICE',sub:'PROFESSIONAL PAYMENT STATEMENT',no:i.ino,date:i.issued||iso(new Date()),x,file:i.ino,
-      inv:{info:[['Invoice No.',i.ino],['Invoice Date',fd(i.issued||iso(new Date()))],['Billing Period',i.from?fd(i.from)+' – '+fd(i.to):''],['Due Date',fd(i.dueDate)],['Tenant Name',x.t.name||''],['Unit',x.unit+(x.b.name?' · '+x.b.name:'')],...(x.u.elecAc?[['Etihad WE Account',x.u.elecAc]]:[]),...(x.u.sewAc?[['Sewerage Account',x.u.sewAc]]:[])],items,total:fmt2(i.amount),paid:fmt2(st.got),bal:fmt2(Math.max(0,st.bal)),prev:prev?fmt2(prev):'',fine:fine?fmt2(fine):'',grand:(prev||fine)?fmt2(grand):'',
+    return{title:c.trn?'TAX INVOICE':'RENT INVOICE',sub:'PROFESSIONAL PAYMENT STATEMENT',no:i.ino,date:i.issued||uaeToday(),x,file:i.ino,
+      inv:{info:[['Invoice No.',i.ino],['Invoice Date',fd(i.issued||uaeToday())],['Billing Period',i.from?fd(i.from)+' – '+fd(i.to):''],['Due Date',fd(i.dueDate)],['Tenant Name',x.t.name||''],['Unit',x.unit+(x.b.name?' · '+x.b.name:'')],...(x.u.elecAc?[['Etihad WE Account',x.u.elecAc]]:[]),...(x.u.sewAc?[['Sewerage Account',x.u.sewAc]]:[])],items,total:fmt2(i.amount),paid:fmt2(st.got),bal:fmt2(Math.max(0,st.bal)),prev:prev?fmt2(prev):'',fine:fine?fmt2(fine):'',grand:(prev||fine)?fmt2(grand):'',
         note:_note},
       blocks:[
       {t:'kv',r:[['Bill to',x.t.name||''],['Tenant ID / Mobile',(x.t.tid||'')+' · '+(x.t.mobile||'')],['Unit',x.unit+' · '+(x.b.name||'')],['Agreement',a?.no||'']]},
@@ -375,7 +379,7 @@ function mkDoc(kind,id){
       msg:`Dear ${x.t.name||'Tenant'},\n\n🧾 *RENT INVOICE ${i.ino}*\n🏠 ${x.unit}${x.b.name?' · '+x.b.name:''}${i.from?`\n📅 Period: ${fd(i.from)} – ${fd(i.to)}`:''}\n\n${[['Rent',i.rent],['SEWA',i.sewa],['WiFi',i.wifi],['Electricity & Water',i.ew],['Discount',-(+i.disc||0)]].filter(r=>+r[1]).map(r=>`• ${r[0]}: ${AED(r[1])}`).join('\n')}\n*Invoice total: ${AED(i.amount)}*${st.got>0?`\nPaid: ${AED(st.got)}\nBalance: *${AED(st.bal)}*`:''}${prev?`\nPrevious pending: ${AED(prev)}`:''}${fine?`\nLate fine: ${AED(fine)}`:''}${prev||fine?`\n\n*TOTAL PAYABLE NOW: ${AED(grand)}*`:''}\n\n⏰ Due date: *${fd(i.dueDate)}*${(()=>{const d=days(i.dueDate);return d!=null&&d>=0&&d<=3&&st.bal>0?`\n⏳ *${d===0?'DUE TODAY':'Due in '+d+' day'+(d>1?'s':'')}*`:''})()}\nPlease pay on time to avoid late fines.\n\nThank you.\n\n${c.brand||c.name}${c.phone?'\n📞 '+c.phone:''}`}}
   if(kind==='chqrec'||kind==='bounce'){const k=by('cheques',id);if(!k)return null;const a=by('agreements',k.agr),x=ctx(a);
     if(kind==='chqrec'){const L=S.cheques.filter(q=>q.agr===k.agr&&!['Bounced','Replaced'].includes(q.status)).sort((p,q)=>(p.chqDate||'').localeCompare(q.chqDate||'')),tot=L.reduce((s,q)=>s+(+q.amount||0),0);
-      return{title:'Cheque Received Receipt',no:'CR-'+(a?.no||'')+'-'+iso(new Date()).replace(/-/g,''),date:iso(new Date()),x,file:(a?.no||'Cheques')+'_ChequesReceived',blocks:[
+      return{title:'Cheque Received Receipt',no:'CR-'+(a?.no||'')+'-'+uaeToday().replace(/-/g,''),date:uaeToday(),x,file:(a?.no||'Cheques')+'_ChequesReceived',blocks:[
       {t:'kv',r:[['Received from',x.t.name||''],['Unit',x.unit+(x.b.name?' · '+x.b.name:'')],['Agreement',a?.no||'']]},
       {t:'p',v:`Received the following cheque${L.length>1?'s':''} from the tenant:`},
       {t:'tb',h:['#','Cheque no','Bank','Cheque date','For','Amount'],w:[8,30,34,28,36,34],r:L.map((q,n)=>[n+1,q.chq||'—',q.bank||'—',fd(q.chqDate),q.purpose||'Rent',AED(q.amount)])},
@@ -384,21 +388,21 @@ function mkDoc(kind,id){
       {t:'sig',p:[['Received by',c.signatory],['Tenant',x.t.name||'']]}],
       msg:`Dear ${x.t.name||'Tenant'},\n\n🧾 *CHEQUES RECEIVED*\n🏠 ${x.unit}${x.b.name?' · '+x.b.name:''}\n${L.map(q=>`• #${q.chq||'?'} ${q.bank||''} – ${fd(q.chqDate)}: ${AED(q.amount)}`).join('\n')}\n*Total: ${AED(tot)}*\n\nSubject to realisation. Thank you.\n\n${c.brand||c.name}${c.phone?'\n📞 '+c.phone:''}`}}
     const bounced=k.status==='Bounced',chg=+c.bounce||0;
-    if(bounced)return{title:'Returned (Bounced) Cheque Notice',no:'BC-'+(k.chq||k.id.slice(-6)),date:iso(new Date()),x,file:(a?.no||'')+'_BouncedCheque',blocks:[
+    if(bounced)return{title:'Returned (Bounced) Cheque Notice',no:'BC-'+(k.chq||k.id.slice(-6)),date:uaeToday(),x,file:(a?.no||'')+'_BouncedCheque',blocks:[
       {t:'kv',r:[['To',x.t.name||''],['Unit',x.unit+(x.b.name?' · '+x.b.name:'')],['Agreement',a?.no||''],['Cheque no',k.chq||''],['Bank',k.bank||''],['Cheque date',fd(k.chqDate)],['For',k.purpose||'Rent']]},
       {t:'p',v:'The above cheque has been returned unpaid by the bank. Any receipt issued against this cheque is cancelled.'},
       {t:'tot',l:'Cheque amount',v:AED(k.amount)},{t:'tot',l:'Returned cheque charge',v:AED(chg)},{t:'tot',l:'Total payable in cash',v:AED((+k.amount||0)+chg)},
       {t:'p',v:`Please pay the total amount in cash or by bank transfer within ${+c.payWithin||3} days. If not paid, the Lessor may file a case for the returned cheque and terminate the tenancy as per the agreement.`},
       {t:'sig',p:[['For '+c.name,c.signatory],['Received by Tenant',x.t.name||'']]}],
       msg:`Dear ${x.t.name||'Tenant'},\n\n⚠️ *CHEQUE RETURNED BY BANK*\n🏠 ${x.unit}${x.b.name?' · '+x.b.name:''}\nCheque #${k.chq||'?'} (${fd(k.chqDate)}) – ${AED(k.amount)}\nReturn charge: ${AED(chg)}\n*Pay now: ${AED((+k.amount||0)+chg)}* within ${+c.payWithin||3} days.\n\n${c.brand||c.name}${c.phone?'\n📞 '+c.phone:''}`};
-    return{title:'Cheque Return Receipt',no:'RT-'+(k.chq||k.id.slice(-6)),date:iso(new Date()),x,file:(a?.no||'')+'_ChequeReturned',blocks:[
+    return{title:'Cheque Return Receipt',no:'RT-'+(k.chq||k.id.slice(-6)),date:uaeToday(),x,file:(a?.no||'')+'_ChequeReturned',blocks:[
       {t:'kv',r:[['Returned to',x.t.name||''],['Unit',x.unit+(x.b.name?' · '+x.b.name:'')],['Agreement',a?.no||''],['Cheque no',k.chq||''],['Bank',k.bank||''],['Cheque date',fd(k.chqDate)],['Amount',AED(k.amount)],['Reason',k.status==='Replaced'?'Replaced by another payment':(k.notes||'Returned to tenant')]]},
       {t:'p',v:'The original cheque above has been returned to the tenant and will not be deposited.'},
       {t:'sig',p:[['Returned by',c.signatory],['Received back by Tenant',x.t.name||'']]}],
       msg:`Dear ${x.t.name||'Tenant'},\n\n↩️ *CHEQUE RETURNED TO YOU*\nCheque #${k.chq||'?'} (${fd(k.chqDate)}) – ${AED(k.amount)}\nIt will not be deposited.\n\n${c.brand||c.name}${c.phone?'\n📞 '+c.phone:''}`}}
   if(kind==='emerg'){const k=by('tickets',id);if(!k)return null;const a=S.agreements.find(g=>g.unit===k.unit&&g.closed!=='Yes')||null,x=ctx(a);if(!a){const u=by('units',k.unit)||{};x.u=u;x.b=by('buildings',u.bld)||{};x.unit=ulab(u)}
-    const when=k.when||fd(k.date||iso(new Date())),cut=k.shut&&k.shut!=='None'?k.shut:'';
-    return{title:'Emergency Maintenance Notice',no:'EM-'+(k.id||'').slice(-6).toUpperCase(),date:iso(new Date()),x,file:'Emergency_'+(x.unit||'').replace(/\W+/g,'_'),blocks:[
+    const when=k.when||fd(k.date||uaeToday()),cut=k.shut&&k.shut!=='None'?k.shut:'';
+    return{title:'Emergency Maintenance Notice',no:'EM-'+(k.id||'').slice(-6).toUpperCase(),date:uaeToday(),x,file:'Emergency_'+(x.unit||'').replace(/\W+/g,'_'),blocks:[
       {t:'kv',r:[['To',x.t.name||'Occupant'],['Unit',x.unit+(x.b.name?' · '+x.b.name:'')],['Work',k.desc||''],['Date & time',when],...(cut?[['Supply interruption',cut+' will be off during the work']]:[])]},
       {t:'p',v:`Urgent maintenance is required in your unit / building to prevent damage and keep everyone safe. Our maintenance team needs access on ${when}.`},
       {t:'ol',r:['Please allow the technician access at the time above, or arrange for someone to be present.','Move personal items away from the work area.',...(cut?[cut+' supply will be temporarily stopped while the work is done.']:[]),'For safety, keep children away from the work area.','If the time does not suit you, call or WhatsApp us immediately'+(c.phone?' on '+c.phone:'')+'.']},
@@ -540,7 +544,7 @@ function alerts(){
 }
 const kli=(attr,l1,l2,r1,r2)=>`<li ${attr}><div><b>${l1}</b>${l2?`<div class="sub">${l2}</div>`:''}</div><div class="n">${r1||''}${r2?`<div class="sub">${r2}</div>`:''}</div></li>`;
 function todayView(){
-  const now=new Date(),td=iso(now),cm=td.slice(0,7),sum=(L,f)=>L.reduce((x,y)=>x+f(y),0);
+  const now=todayDate(),td=iso(now),cm=td.slice(0,7),sum=(L,f)=>L.reduce((x,y)=>x+f(y),0);
   const ags=S.agreements.filter(a=>inB(abld(a))&&live(a));
   const ur=a=>by('units',a.unit),rl=a=>bdot(ur(a)?.bld)+esc(ulab(ur(a)))+' · '+esc(tname(a.tenant));
   // pending (overdue / due)
@@ -688,7 +692,7 @@ async function icsExport(){
   if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file]});return}catch(e){if(e.name==='AbortError')return}}
   saveBlob(f);toast('Open the file to add cheque reminders to your calendar')
 }
-function nextDue(a){if(!a)return null;const d=new Date();d.setHours(0,0,0,0);const dd=+a.dueDay||+(a.start||a.billFrom||'').slice(8,10)||1;let n=new Date(d.getFullYear(),d.getMonth(),dd);if(n<d)n=new Date(d.getFullYear(),d.getMonth()+1,dd);const op=a?aopen(a):[];return op.length?op[0].dueDate:iso(n)}
+function nextDue(a){if(!a)return null;const d=todayDate();const dd=+a.dueDay||+(a.start||a.billFrom||'').slice(8,10)||1;let n=new Date(d.getFullYear(),d.getMonth(),dd);if(n<d)n=new Date(d.getFullYear(),d.getMonth()+1,dd);const op=a?aopen(a):[];return op.length?op[0].dueDate:iso(n)}
 function openRoom(uid){
   const u=by('units',uid);if(!u)return;roomOpen=uid;inRoom=true;const a=uagr(u),t=a?by('tenants',a.tenant)||{}:{},b=by('buildings',u.bld)||{};
   const D=(k,id,lab,sub,cls='')=>`<button class="pp ${cls}" data-doc="${k}" data-id="${id}"><b>${lab}</b><span>${sub||''}</span></button>`;
@@ -717,7 +721,7 @@ const NUMW=['zero','one','two','three','four','five','six','seven','eight','nine
 function wDeadline(a){const op=aopen(a);if(!op.length)return null;const c=co(),d=D(op[0].dueDate);d.setDate(d.getDate()+(+c.warnDays||7)+(+c.payWithin||3));return iso(d)}
 const leftTxt=n=>n==null?'':n<0?'deadline passed '+(-n)+'d ago':n===0?'LAST DAY today':n+' day'+(n>1?'s':'')+' left';
 function roomsView(){
-  const today=iso(new Date()),bs=[...S.buildings].filter(b=>inB(b.id)).sort((a,b)=>(a.code||'').localeCompare(b.code||''));
+  const today=uaeToday(),bs=[...S.buildings].filter(b=>inB(b.id)).sort((a,b)=>(a.code||'').localeCompare(b.code||''));
   return bs.map(b=>{
     const us=S.units.filter(u=>u.bld===b.id).sort(sortU).filter(u=>{const a=uagr(u);return hit([u,a&&tname(a.tenant),a&&by('tenants',a.tenant)?.mobile])});
     if(!us.length)return'';
@@ -811,8 +815,8 @@ function field([k,l,t,o],r){
   return`<label class="fld${t==='area'?' wide':''}"><span>${l}</span>${i}</label>`;
 }
 function defaults(c){
-  const b=bsel==='all'?'':bsel,t=iso(new Date());
-  return{units:{bld:b,period:'Monthly',furn:'Unfurnished'},tenants:{tid:nextId('tenants','tid','T-'),idCopy:'No'},agreements:{no:nextId('agreements','no','AG-'),contract:'Monthly',period:'Monthly',start:t,dueDay:Math.min(28,new Date().getDate()),billFrom:t,use:'Residential',signed:'Not signed',closed:'No'},payments:{rno:nextId('payments','rno','R-'),date:t,method:'Cash'},invoices:{ino:'INV-M'+String(Math.max(0,...S.invoices.map(i=>String(i.ino||'').startsWith('INV-M')?+i.ino.slice(5)||0:0))+1).padStart(4,'0'),kind:'Rent',dueDate:t},settings:{...CO_DEF},cheques:{status:'Pending'},tickets:{status:'Open',kind:'Maintenance',date:iso(new Date())},bills:{date:t,bld:b,paidBy:'Owner',status:'Unpaid'},buildings:{}}[c];
+  const b=bsel==='all'?'':bsel,t=uaeToday();
+  return{units:{bld:b,period:'Monthly',furn:'Unfurnished'},tenants:{tid:nextId('tenants','tid','T-'),idCopy:'No'},agreements:{no:nextId('agreements','no','AG-'),contract:'Monthly',period:'Monthly',start:t,dueDay:Math.min(28,todayDate().getDate()),billFrom:t,use:'Residential',signed:'Not signed',closed:'No'},payments:{rno:nextId('payments','rno','R-'),date:t,method:'Cash'},invoices:{ino:'INV-M'+String(Math.max(0,...S.invoices.map(i=>String(i.ino||'').startsWith('INV-M')?+i.ino.slice(5)||0:0))+1).padStart(4,'0'),kind:'Rent',dueDate:t},settings:{...CO_DEF},cheques:{status:'Pending'},tickets:{status:'Open',kind:'Maintenance',date:uaeToday()},bills:{date:t,bld:b,paidBy:'Owner',status:'Unpaid'},buildings:{}}[c];
 }
 function history(c,r){
   if(c==='tenants'){const ag=S.agreements.filter(a=>a.tenant===r.id),ps=S.payments.filter(p=>ag.some(a=>a.id===p.agr));
@@ -861,8 +865,8 @@ document.addEventListener('click',e=>{
   else if(el=g('[data-payamt]')){const f=$('#frm');if(f){f.paid.value=el.dataset.payamt;payInfo()}}
   else if(g('#chpw')){$('#modal').innerHTML=`<h2>Change password</h2><form id="pwf"><label class="fld"><span>New password (min 8)</span><input id="np" type="password" minlength="8" required autocomplete="new-password"></label><div class="acts"><span class="sp"></span><button type="button" class="btn ghost" id="cancel">Cancel</button><button class="btn">Save</button></div></form>`;$('#ov').classList.remove('doc');$('#ov').classList.add('on');$('#pwf').addEventListener('submit',async ev=>{ev.preventDefault();ev.stopPropagation();const {error}=await db.auth.updateUser({password:$('#np').value});toast(error?'Could not change: '+error.message:'Password changed');if(!error)close()})}
   else if(g('#cpy')){navigator.clipboard?.writeText(curDoc?.m?.msg||'').then(()=>toast('Message copied'),()=>toast('Copy not allowed here'))}
-  else if(el=g('[data-sign]')){const a=by('agreements',el.dataset.sign);if(a){const {id,...d}=a;write({op:'set',c:'agreements',id,data:{...d,signed:'Signed',signedDate:d.signedDate||iso(new Date())}},'Marked as signed')}}
-  else if(el=g('[data-charge]')){const a=by('agreements',el.dataset.charge);if(a){const amt=afee(a),n=S.invoices.filter(i=>i.agr===a.id&&i.kind==='Late fee').length+1;write({op:'set',c:'invoices',id:'fee-'+a.id+'-'+n,data:{ino:'INV-'+String(a.no).replace(/[^A-Za-z0-9]/g,'')+'-F'+n,kind:'Late fee',agr:a.id,dueDate:iso(new Date()),issued:iso(new Date()),amount:amt,notes:'Late payment fine as per agreement clause 5'}},'Fine invoice created')}}
+  else if(el=g('[data-sign]')){const a=by('agreements',el.dataset.sign);if(a){const {id,...d}=a;write({op:'set',c:'agreements',id,data:{...d,signed:'Signed',signedDate:d.signedDate||uaeToday()}},'Marked as signed')}}
+  else if(el=g('[data-charge]')){const a=by('agreements',el.dataset.charge);if(a){const amt=afee(a),n=S.invoices.filter(i=>i.agr===a.id&&i.kind==='Late fee').length+1;write({op:'set',c:'invoices',id:'fee-'+a.id+'-'+n,data:{ino:'INV-'+String(a.no).replace(/[^A-Za-z0-9]/g,'')+'-F'+n,kind:'Late fee',agr:a.id,dueDate:uaeToday(),issued:uaeToday(),amount:amt,notes:'Late payment fine as per agreement clause 5'}},'Fine invoice created')}}
   else if(el=g('[data-kpi]')){const k=el.dataset.kpi;kpiK=kpiK===k?null:k;render();if(kpiK)setTimeout(()=>$('.kd')?.scrollIntoView({behavior:'smooth',block:'start'}),50)}
   else if(el=g('[data-room]')){if(el.dataset.room)openRoom(el.dataset.room)}
   else if(el=g('[data-doc]')){openDoc(el.dataset.doc,el.dataset.id)}
