@@ -54,6 +54,10 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .kpi.tap.on:after{content:'Showing list ▾'}
 .kdh{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .kds{font-size:15px;margin:18px 0 6px;padding:6px 10px;border-radius:8px;background:#f3f4f8}
+.tdhead h1{font:800 22px/1.2 "Red Hat Display",sans-serif;margin:0}.tdhead{margin:2px 0 12px}
+a.kpi{text-decoration:none;color:inherit;display:block}.okc{color:#1f7a3d}
+.tdb h2{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.tdb h2 .cnt{background:#eef0f6;border-radius:99px;padding:1px 9px;font-size:14px}.tdb h2 .amt{margin-left:auto;font-size:15px}
+.tdb.bad{border-left:4px solid #c8325a}.tdb.warn{border-left:4px solid #e0a106}.tdb.ok{border-left:4px solid #2e8b57}
 .kl{list-style:none;margin:0;padding:0}.kl li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:10px 4px;border-bottom:1px solid var(--line);cursor:pointer;align-items:center}.kl li .n{text-align:right;white-space:nowrap;font-weight:700}.kl li .sub{font-weight:400}
 .kds.ok{background:#e8f5ec}.kds.warn{background:#fff6e0}.kds.bad{background:#fdeaee}
 .meter{height:8px;background:var(--soft);border-radius:4px;overflow:hidden;margin-top:6px}.meter i{display:block;height:100%;background:var(--ok)}
@@ -161,10 +165,10 @@ const SCH={
  settings:{t:'Company details',f:[['brand','Brand name on papers'],['name','Company name (First Party)'],['address','Address'],['phone','Phone'],['email','Email'],['trn','TRN (if VAT registered)'],['licence','Trade licence no'],['signatory','Authorised signatory'],['bank','Bank details for payment','area'],['_','Invoices & fines (printed in agreements)','h'],['notice','Send invoice days before due','num'],['grace','Grace days before fine','num'],['feeFixed','Late fine — fixed (AED)','num'],['feeDay','Late fine — per extra day (AED)','num'],['feeMax','Max fine per instalment (AED)','num'],['bounce','Bounced cheque charge (AED)','num'],['warnDays','Warning notice after days overdue','num'],['payWithin','Warning: days given to pay (countdown)','num'],['vacateNotice','Vacate notice required (days)','num'],['minorMax','Minor maintenance limit paid by tenant, per repair (AED)','num'],['_','Maintenance requests','h'],['maintWa','Maintenance WhatsApp number'],['maintHours','Maintenance timing'],['maintDays','Working days'],['maintOff','Off days'],['maintHrs','Resolved within (hours)','num']]},
  bills:{t:'Bill / expense',f:[['date','Date / bill month','date'],['bld','Building','bld'],['unit','Unit (blank = whole building)','unit'],['cat','Category','sel',CATS],['desc','Description / vendor'],['acc','Account / bill no'],['amount','Amount (AED)','num'],['paidBy','Paid by','sel',['Owner','Tenant']],['status','Status','sel',BST],['recover','Recover from tenant (AED)','num'],['notes','Notes','area']]}
 };
-const TABS=[['rooms','Rooms'],['overview','Overview'],['docs','Vouchers'],['units','Units'],['tenants','Tenants'],['agreements','Agreements'],['payments','Rent'],['bills','Bills & expenses'],['buildings','Buildings']];
+const TABS=[['home','Today'],['rooms','Rooms'],['overview','Overview'],['docs','Vouchers'],['units','Units'],['tenants','Tenants'],['agreements','Agreements'],['payments','Rent'],['bills','Bills & expenses'],['buildings','Buildings']];
 const S={buildings:[],units:[],tenants:[],agreements:[],payments:[],bills:[],invoices:[],settings:[],cheques:[],tickets:[]};
 const iso=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
-let db=null,canWrite=true,bsel='all',tab='rooms',q='',month=iso(new Date()).slice(0,7),online=false;
+let db=null,canWrite=true,bsel='all',tab='home',q='',month=iso(new Date()).slice(0,7),online=false;
 const LK='mrc-sb-data-v1',OK='mrc-sb-outbox-v1';
 const ls={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch(_){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(_){}}};
 let outbox=ls.get(OK,[]);
@@ -458,6 +462,60 @@ function alerts(){
   S.bills.filter(b=>inB(b.bld)&&b.status!=='Paid'&&b.paidBy!=='Tenant').forEach(b=>L.push([1,'warn','Bill unpaid',`${esc(b.cat)} · ${esc(bcode(b.bld))} · AED ${fmt(b.amount)}`,'bills',b.id]));
   return L.sort((a,b)=>a[0]-b[0]);
 }
+const kli=(attr,l1,l2,r1,r2)=>`<li ${attr}><div><b>${l1}</b>${l2?`<div class="sub">${l2}</div>`:''}</div><div class="n">${r1||''}${r2?`<div class="sub">${r2}</div>`:''}</div></li>`;
+function todayView(){
+  const now=new Date(),td=iso(now),cm=td.slice(0,7),sum=(L,f)=>L.reduce((x,y)=>x+f(y),0);
+  const ags=S.agreements.filter(a=>inB(abld(a))&&live(a));
+  const ur=a=>by('units',a.unit),rl=a=>esc(ulab(ur(a)))+' · '+esc(tname(a.tenant));
+  // pending (overdue / due)
+  const pend=S.agreements.filter(a=>inB(abld(a))).map(a=>{const op=aopen(a);return{a,op,bal:sum(op,i=>IS[i.id].bal),d:op.length?days(op[0].dueDate):null,dl:wDeadline(a)}}).filter(r=>r.bal>0);
+  const dueToday=pend.filter(r=>r.d===0),overdue=pend.filter(r=>r.d<0).sort((x,y)=>y.bal-x.bal);
+  // coming in 1-2 days
+  const seen=new Set(pend.map(r=>r.a.id)),coming=[];
+  ags.forEach(a=>{if(seen.has(a.id))return;
+    const fut=ainv(a).filter(i=>IS[i.id]&&IS[i.id].bal>0&&(d=>d!=null&&d>=1&&d<=2)(days(i.dueDate)));
+    if(fut.length){coming.push({a,d:days(fut[0].dueDate),amt:sum(fut,i=>IS[i.id].bal),dt:fut[0].dueDate});return}
+    if(a.period!=='Monthly'||aexp(a)<=0)return;
+    const nd=nextDue(a),d=days(nd);if(d==null||d<1||d>2)return;
+    const inv=ainv(a).find(i=>i.dueDate===nd&&i.kind!=='Late fee');if(inv&&IS[inv.id]&&IS[inv.id].bal<=0)return;
+    if(a.billFrom&&nd<a.billFrom&&!inv)return;
+    coming.push({a,d,amt:aexp(a),dt:nd})});
+  coming.sort((x,y)=>x.d-y.d);
+  const pays=S.payments.filter(p=>inB(pbld(p))),gotT=sum(pays.filter(p=>p.date===td),p=>+p.paid||0),gotM=sum(pays.filter(p=>(p.date||'').slice(0,7)===cm),p=>+p.paid||0);
+  const totP=sum(pend,r=>r.bal),comingAmt=sum(coming,r=>r.amt);
+  const chq=upChq().filter(q=>q.d!=null&&q.d<=7);
+  const vac=S.units.filter(u=>inB(u.bld)&&!uagr(u)).sort(sortU);
+  const tk=S.tickets.filter(t=>t.status!=='Done'&&inB(by('units',t.unit)?.bld)).sort((x,y)=>(x.date||'').localeCompare(y.date||''));
+  const clean=tk.filter(t=>/clean|handover|hand over|key/i.test((t.desc||'')+' '+(t.notes||''))),fix=tk.filter(t=>!clean.includes(t));
+  const keys=ags.filter(a=>a.keys==='Not handed over');
+  const fu=[];
+  S.agreements.filter(a=>inB(abld(a))).forEach(a=>{const st=ast(a),d=days(a.end),v=days(a.vacateOn);
+    if(st==='Expired')fu.push([0,a,'Expired '+fd(a.end)+' — renew or close','bad']);
+    else if(st==='Expiring')fu.push([1,a,'Ends in '+d+'d ('+fd(a.end)+') — renewal','warn']);
+    if(v!=null&&v>=0&&v<=30&&st!=='Closed')fu.push([1,a,'Vacating '+fd(a.vacateOn)+' ('+v+'d)','warn']);
+    if(live(a)&&/pending|needed/i.test(tname(a.tenant)))fu.push([2,a,'Tenant name / mobile missing','mute'])});
+  fu.sort((x,y)=>x[0]-y[0]);
+  const ubill=S.bills.filter(b=>inB(b.bld)&&b.status!=='Paid'&&b.paidBy!=='Tenant');
+  const box=(id,ic,t,n,amt,cls,body)=>`<div class="card tdb ${cls}" id="td-${id}"><h2>${ic} ${t} <span class="cnt">${n}</span>${amt!=null?`<span class="amt">AED ${fmt(amt)}</span>`:''}</h2>${n?`<ul class="kl">${body}</ul>`:'<p class="sub">Nothing — all clear ✅</p>'}</div>`;
+  const wd=now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
+  let h=`<div class="tdhead"><h1>Today · ${esc(wd)}</h1><p class="sub">${bsel==='all'?'All buildings':esc(by('buildings',bsel)?.name||'')}</p></div>
+  <div class="kpis">
+   <a class="kpi money tap2" href="#td-pend"><span>Pending total</span><b>AED ${fmt(totP)}</b><em>${pend.length} rooms</em></a>
+   <a class="kpi tap2" href="#td-got"><span>Received · ${now.toLocaleDateString('en-GB',{month:'short'})}</span><b class="okc">AED ${fmt(gotM)}</b><em>today AED ${fmt(gotT)}</em></a>
+   <a class="kpi tap2" href="#td-coming"><span>Coming in 1–2 days</span><b>AED ${fmt(comingAmt)}</b><em>${coming.length} rooms</em></a>
+   <a class="kpi tap2" href="#td-vac"><span>Vacant rooms</span><b>${vac.length}</b><em>cheques this week: ${chq.length}</em></a></div>`;
+  h+=box('today','💰','Collect today',dueToday.length,sum(dueToday,r=>r.bal),'warn',dueToday.map(r=>kli(`data-room="${r.a.unit}"`,rl(r.a),r.op.map(i=>esc(i.ino)).join(', '),tag('AED '+fmt(r.bal),'warn'),'due today')).join(''));
+  h+=box('pend','🔴','Rent pending',overdue.length,sum(overdue,r=>r.bal),'bad',overdue.map(r=>{const w=r.op.some(i=>IS[i.id].st==='Warning'),n=r.dl?days(r.dl):null;return kli(`data-room="${r.a.unit}"`,rl(r.a),'Since '+fd(r.op[0].dueDate)+' · '+(-r.d)+' days late'+(r.op.length>1?' · '+r.op.length+' invoices':''),tag('AED '+fmt(r.bal),'bad'),w&&n!=null?esc(leftTxt(n)):'')}).join(''));
+  h+=box('coming','📅','Rent coming in 1–2 days',coming.length,comingAmt,'',coming.map(r=>kli(`data-room="${r.a.unit}"`,rl(r.a),fd(r.dt)+' · '+(r.d===1?'tomorrow':'in 2 days'),'AED '+fmt(r.amt),'')).join(''));
+  h+=box('chq','🧾','Cheques to deposit (7 days)',chq.length,sum(chq,q=>+q.k.amount||0),'',chq.map(({k,a,d})=>kli(`data-open="cheques" data-id="${k.id}"`,rl(a),'#'+esc(k.chq||'?')+' '+esc(k.bank||'')+' · '+fd(k.chqDate)+(k.purpose&&k.purpose!=='Rent'?' · '+esc(k.purpose):''),'AED '+fmt(k.amount),d<0?(-d)+'d passed':d===0?'TODAY':'in '+d+'d')).join(''));
+  h+=box('vac','🚪','Vacant rooms',vac.length,null,'',vac.map(u=>kli(`data-room="${u.id}"`,esc(ulab(u)),esc([u.type,u.furn,(u.notes||'').length>60?u.notes.slice(0,57)+'…':u.notes].filter(Boolean).join(' · ')),u.rent?'Ask '+fmt(u.rent):'','')).join(''));
+  h+=box('clean','🧹','Cleaning / handover pending',clean.length+keys.filter(a=>!clean.some(t=>t.unit===a.unit)).length,null,'warn',clean.map(t=>kli(`data-room="${t.unit}"`,esc(ulab(by('units',t.unit))),esc(t.desc)+(t.date?' · since '+fd(t.date):''),tag(t.status||'Open','warn'),'')).join('')+keys.filter(a=>!clean.some(t=>t.unit===a.unit)).map(a=>kli(`data-room="${a.unit}"`,rl(a),'Keys not handed over','🔑','')).join(''));
+  h+=box('fix','🔧','Maintenance & complaints open',fix.length,null,'',fix.map(t=>{const d=t.date?-days(t.date):null;return kli(`data-room="${t.unit}"`,esc(ulab(by('units',t.unit)))+' · '+esc(t.kind||''),esc(t.desc),tag(t.status||'Open',d!=null&&d>=1?'bad':'warn'),d!=null?(d>=1?d+'d open':'today'):'')}).join(''));
+  h+=box('fu','📌','Follow-up',fu.length+ubill.length,null,'',fu.map(([,a,t,c])=>kli(`data-room="${a.unit}"`,rl(a),'',tag(t,c),'')).join('')+ubill.map(b=>kli(`data-open="bills" data-id="${b.id}"`,'Bill unpaid · '+esc(b.cat)+' · '+esc(bcode(b.bld))+(b.unit?' '+esc(ulab(by('units',b.unit))):''),fd(b.date)+(b.desc?' · '+esc(b.desc):''),'AED '+fmt(b.amount),'')).join(''));
+  const pt=pays.filter(p=>(p.date||'').slice(0,7)===cm).sort((x,y)=>(y.date||'').localeCompare(x.date||''));
+  h+=box('got','✅','Received this month',pt.length,gotM,'ok',pt.map(p=>{const a=by('agreements',p.agr);return kli(`data-open="payments" data-id="${p.id}"`,a?rl(a):'—',fd(p.date)+' · '+esc(p.method||'')+(p.pkind&&p.pkind!=='Rent'?' · '+esc(p.pkind):''),fmt(p.paid),'')}).join(''));
+  return h;
+}
 let kpiK=null;
 const aexp=a=>(+a.rent||0)*(FX[a.period]||1)+(a.period==='Monthly'?(+a.sewaFee||0)+(+a.wifiFee||0)-(+a.discount||0):0);
 function kpiDetail(k){
@@ -644,9 +702,9 @@ function render(){
   const bs=[...S.buildings].sort((a,b)=>(a.code||'').localeCompare(b.code||''));
   $('#chips').innerHTML=[['all','All buildings'],...bs.map(b=>[b.id,b.name||b.code])].map(([id,n])=>`<button data-bsel="${id}" aria-pressed="${bsel===id}">${esc(n)}</button>`).join('');
   $('#tabs').innerHTML=TABS.map(([k,n])=>`<button role="tab" data-tab="${k}" aria-selected="${tab===k}">${n}</button>`).join('');
-  $('#q').hidden=tab==='overview';$('#month').hidden=!['overview','rooms','payments','bills','docs'].includes(tab);
-  $('#add').textContent='+ '+(tab==='overview'?'Rent payment':tab==='rooms'?'Complaint / maintenance':tab==='docs'?'Invoice':SCH[tab].t);
-  $('#main').innerHTML=tab==='overview'?overview():tab==='rooms'?roomsView():LIST[tab]();
+  $('#q').hidden=tab==='overview'||tab==='home';$('#month').hidden=!['overview','rooms','payments','bills','docs'].includes(tab);
+  $('#add').textContent='+ '+(tab==='overview'||tab==='home'?'Rent payment':tab==='rooms'?'Complaint / maintenance':tab==='docs'?'Invoice':SCH[tab].t);
+  $('#main').innerHTML=tab==='home'?todayView():tab==='overview'?overview():tab==='rooms'?roomsView():LIST[tab]();
 }
 function opts(t,v){
   const o=(val,lab)=>`<option value="${esc(val)}"${val===v?' selected':''}>${esc(lab)}</option>`;
@@ -726,7 +784,7 @@ document.addEventListener('click',e=>{
   else if(el=g('[data-b]')){bsel=el.dataset.b;render()}
   else if((el=g('[data-open]'))&&!g('#modal')){openForm(el.dataset.open,el.dataset.id)}
   else if(el=g('[data-new]')){openForm(el.dataset.new,null,el.dataset.pre?JSON.parse(el.dataset.pre):null)}
-  else if(g('#add')){openForm(tab==='overview'?'payments':tab==='rooms'?'tickets':tab==='docs'?'invoices':tab)}
+  else if(g('#add')){openForm(tab==='overview'||tab==='home'?'payments':tab==='rooms'?'tickets':tab==='docs'?'invoices':tab)}
   else if(g('#cancel')||e.target===$('#ov'))close();
   else if(el=g('#del')){if(el.dataset.sure){const {c,id}=cur;write({op:'del',c,id},'Deleted')}else{el.dataset.sure=1;el.textContent='Tap again to delete'}}
 });
