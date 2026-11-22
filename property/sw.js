@@ -1,5 +1,5 @@
 // MRC Properties – offline cache. Page: network first (gets updates), fallback cache. Libraries & icons: cache first.
-const C='mrc-v21';
+const C='mrc-v22';
 const PRE=['./','index.html','icon-180.png','icon-512.png','manifest.json',
  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js'];
