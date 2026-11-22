@@ -185,7 +185,7 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none}
 <body>
 <header class="band">
   <div class="top">
-    <div class="brand"><h1>MRC Properties</h1><small><span id="appv">v26 · 23 Nov 2026</span> · <button id="upd" type="button" class="hlink">⟳ Update</button></small></div>
+    <div class="brand"><h1>MRC Properties</h1><small><span id="appv">v27 · 23 Nov 2026</span> · <button id="upd" type="button" class="hlink">⟳ Update</button></small></div>
     <div class="hr"><div class="conn" id="conn"><i></i><span>Connecting…</span></div><button class="hlink" id="logout" hidden>Sign out</button></div>
   </div>
   <nav class="chips" id="chips" aria-label="Building"></nav>
@@ -1123,7 +1123,9 @@ document.addEventListener('submit',e=>{
   if(c==='cheques'){const old=id?by('cheques',id):null;o.pay=old?.pay||'';
     if(o.status==='Cleared'&&!o.pay&&(o.purpose||'Rent')==='Rent'){const pid=newId();o.pay=pid;write({op:'set',c:'payments',id:pid,data:{rno:nextId('payments','rno','R-'),date:o.chqDate,agr:o.agr,paid:o.amount,method:'Cheque',chq:o.chq,bank:o.bank,chqDate:o.chqDate,chqStatus:'Cleared',notes:'From cheque register',updatedAt:o.updatedAt}},'Receipt created')}
     else if(o.pay&&by('payments',o.pay)){const pp=by('payments',o.pay);if(o.status==='Bounced'){write({op:'del',c:'payments',id:o.pay},'Receipt cancelled – cheque bounced');o.pay=''}else{const {id:_,...rest}=pp;write({op:'set',c:'payments',id:o.pay,data:{...rest,paid:o.amount,chq:o.chq,bank:o.bank,chqDate:o.chqDate}})}}}
-  write({op:'set',c,id:id||newId(),data:o},'Saved');
+  const nid=id||newId();write({op:'set',c,id:nid,data:o},'Saved');
+  // new rent payment: open its receipt straight away so it can be sent to the tenant in one tap
+  if(c==='payments'&&!id&&canWrite&&by('payments',nid))setTimeout(()=>{openDoc('receipt',nid);toast('Payment saved – tap 📄 Send PDF on WhatsApp to send the receipt')},80);
 });
 $('#q').addEventListener('input',e=>{q=e.target.value.trim().toLowerCase();render()});
 $('#month').value=month;$('#month').addEventListener('change',e=>{month=e.target.value||month;render()});
