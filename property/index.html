@@ -133,7 +133,7 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none}
 <body>
 <header class="band">
   <div class="top">
-    <div><h1>MRC Properties</h1><small>Flats, tenants, agreements, rent &amp; bills — Ajman · <span id="appv">v18 · 22 Nov 2026</span> <button id="upd" type="button" style="background:none;border:1px solid #3b4f86;color:#cdd6ee;border-radius:12px;padding:2px 10px;font-size:12px;cursor:pointer">⟳ Update</button></small></div>
+    <div><h1>MRC Properties</h1><small>Flats, tenants, agreements, rent &amp; bills — Ajman · <span id="appv">v19 · 22 Nov 2026</span> <button id="upd" type="button" style="background:none;border:1px solid #3b4f86;color:#cdd6ee;border-radius:12px;padding:2px 10px;font-size:12px;cursor:pointer">⟳ Update</button></small></div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><div class="conn" id="conn"><i></i><span>Connecting…</span></div><button class="btn ghost" id="logout" style="color:#fff;border-color:#3b4f86;min-height:36px" hidden>Sign out</button></div>
   </div>
   <nav class="chips" id="chips" aria-label="Building"></nav>
@@ -177,6 +177,7 @@ const SCH={
 };
 const TABS=[['home','Today'],['rooms','Rooms'],['overview','Overview'],['docs','Vouchers'],['units','Units'],['tenants','Tenants'],['agreements','Agreements'],['payments','Rent'],['bills','Bills & expenses'],['assets','Items & warranty'],['buildings','Buildings']];
 const S={buildings:[],units:[],tenants:[],agreements:[],payments:[],bills:[],invoices:[],settings:[],cheques:[],tickets:[],assets:[]};
+const IMGC={};
 const iso=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
 // Property records use the UAE calendar. Keep date-only values compatible with D and iso.
 const uaeCalendar=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Dubai',year:'numeric',month:'2-digit',day:'2-digit'});
@@ -493,7 +494,7 @@ function docPDF(m){
       let cx=X;b.h.forEach((h,i)=>{const last=i===b.h.length-1;d.text(String(h),last?cx+ws[i]-1.5:cx+1.5,y,last?{align:'right'}:{});cx+=ws[i]});y+=6;
       b.r.forEach(r=>{const C=r.map((v,i)=>txt(v,0,ws[i]-3)),h=Math.max(...C.map(l=>l.length))*4.2+1.8;brk(h);let cx=X;
         C.forEach((L,i)=>{const last=i===C.length-1;d.setFont('helvetica','normal');d.setTextColor(20);d.text(L,last?cx+ws[i]-1.5:cx+1.5,y,last?{align:'right'}:{});cx+=ws[i]});y+=h-1.8;d.line(X,y,X+W,y);y+=4.4})}
-    else if(b.t==='img'){const r0=(+b.h||3)/(+b.w||4);let ww=Math.min(W*0.8,120),hh=ww*r0;if(hh>150){hh=150;ww=hh/r0}brk(hh+(b.cap?10:6));try{d.addImage(b.src,'JPEG',X+(W-ww)/2,y,ww,hh)}catch(e){}y+=hh+3;if(b.cap){d.setFont('helvetica','normal');d.setFontSize(8);d.setTextColor(...GREY);d.text(txt(b.cap,0,W),X+W/2,y+2,{align:'center'});y+=6}y+=3;d.setFontSize(9.5)}
+    else if(b.t==='img'){const r0=(+b.h||3)/(+b.w||4);let ww=Math.min(W*0.8,120),hh=ww*r0;if(hh>150){hh=150;ww=hh/r0}brk(hh+(b.cap?10:6));try{const im=imgData(b.src);if(im)d.addImage(im,'JPEG',X+(W-ww)/2,y,ww,hh)}catch(e){}y+=hh+3;if(b.cap){d.setFont('helvetica','normal');d.setFontSize(8);d.setTextColor(...GREY);d.text(txt(b.cap,0,W),X+W/2,y+2,{align:'center'});y+=6}y+=3;d.setFontSize(9.5)}
     else if(b.t==='tot'){brk(7);d.setFont('helvetica','normal');d.setFontSize(9.5);d.setTextColor(40);d.text(b.l,X+1.5,y);d.setFont('helvetica','bold');d.setTextColor(...NAVY);d.text(b.v,X+W-1.5,y,{align:'right'});y+=2;d.setDrawColor(...LINE);d.line(X,y,X+W,y);y+=4.6}
     else if(b.t==='sig'){brk(30);y+=14;const n=b.p.length,w=(W-(n-1)*8)/n;b.p.forEach((p,i)=>{const x=X+i*(w+8);d.setDrawColor(60);d.line(x,y,x+w,y);d.setFont('helvetica','bold');d.setFontSize(8.5);d.setTextColor(20);d.text(d.splitTextToSize(p[0],w),x,y+4);d.setFont('helvetica','normal');d.setTextColor(90);d.text(d.splitTextToSize((p[1]||'')+'  ·  Signature & date',w),x,y+8)});d.setDrawColor(...LINE);y+=16}
   });
@@ -538,6 +539,8 @@ document.addEventListener('change',e=>{const inp=e.target.closest('input[data-ph
   fr.onload=()=>{const im=new Image();im.onload=()=>{const sc=Math.min(1,1400/Math.max(im.width,im.height)),w=Math.round(im.width*sc),h=Math.round(im.height*sc),cv=document.createElement('canvas');cv.width=w;cv.height=h;const cx=cv.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,w,h);cx.drawImage(im,0,0,w,h);
     const u=cv.toDataURL('image/jpeg',.62);f.elements[k].value=u;f.elements[k+'W'].value=w;f.elements[k+'H'].value=h;const pi=inp.closest('.ph').querySelector('img');pi.src=u;pi.hidden=false;toast('Photo added – tap Save')};im.src=fr.result};fr.readAsDataURL(inp.files[0])});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-phclr]');if(!b)return;const f=b.closest('form'),k=b.dataset.phclr;f.elements[k].value='';f.elements[k+'W'].value='';f.elements[k+'H'].value='';const pi=b.closest('.ph').querySelector('img');pi.hidden=true;pi.removeAttribute('src')});
+function imgData(s){return s&&!s.startsWith('data:')?IMGC[s]||'':s}
+function preloadImgs(){S.assets.forEach(x=>{const s=x.photo;if(!s||s.startsWith('data:')||IMGC[s]!==undefined)return;IMGC[s]='';fetch(s).then(r=>r.ok?r.blob():null).then(b=>{if(!b)return;const fr=new FileReader();fr.onload=()=>{IMGC[s]=fr.result};fr.readAsDataURL(b)}).catch(()=>{})})}
 function mkFile(){
   const m=curDoc?.m;if(!m)return null;const name=(m.file+'_'+(m.x.t.name||'')).replace(/[^A-Za-z0-9_-]+/g,'_').replace(/_+$/,'');
   if(window.jspdf){try{const b=docPDF(m);return{m,blob:b instanceof Blob?b:new Blob([b],{type:'application/pdf'}),fn:name+'.pdf'}}catch(e){toast('PDF error: '+(e.message||e)+' – saving printable page')}}
@@ -839,7 +842,7 @@ function docsView(){
   return h;
 }
 function render(){
-  IS=invState();
+  IS=invState();preloadImgs();
   const bs=[...S.buildings].sort((a,b)=>(a.code||'').localeCompare(b.code||''));
   $('#chips').innerHTML=[['all','All buildings'],...bs.map(b=>[b.id,b.name||b.code])].map(([id,n])=>`<button data-bsel="${id}" aria-pressed="${bsel===id}" style="--bc:${id==='all'?'#ffffff':bcol(id)}">${id==='all'?'':bdot(id)}${esc(n)}</button>`).join('');
   $('#tabs').innerHTML=TABS.map(([k,n])=>`<button role="tab" data-tab="${k}" aria-selected="${tab===k}" style="--tc:${TCOL[k]||'#fff'}">${n}</button>`).join('');
