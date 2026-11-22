@@ -102,6 +102,7 @@ body{padding-top:env(safe-area-inset-top)}body::before{content:'';position:fixed
 .ov.doc{padding:0;align-items:stretch}.ov.doc .modal{width:min(900px,100%);border-radius:0;padding:0;display:flex;flex-direction:column;min-height:100%;background:#dfe4ec}
 .dvtop{position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:10px;padding:10px 12px 10px 16px;padding-top:max(10px,env(safe-area-inset-top));background:var(--band);color:#fff}.dvtop b{flex:1;font:700 16px/1.2 "Red Hat Display",sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dvtop .x{flex:none;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.14);color:#fff;font-size:20px;cursor:pointer}
 .dvpage{flex:1;padding:12px;overflow:hidden}.pgwrap{margin:0 auto}.page{width:794px;transform-origin:0 0;background:#fff;box-shadow:0 4px 18px rgba(10,20,50,.22);border-radius:3px}
+.edf{padding:12px 14px 20px;overflow:auto;flex:1}.edf h3{margin:16px 0 6px;font-size:15px;color:var(--mute)}.edf textarea{width:100%}
 .dvbar{position:sticky;bottom:0;z-index:3;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:10px 12px;padding-bottom:max(10px,env(safe-area-inset-bottom));background:var(--panel);border-top:1px solid var(--line);box-shadow:0 -4px 14px rgba(0,0,0,.08)}.dvbar .btn{padding:0 8px;font-size:14px;min-height:46px;display:flex;align-items:center;justify-content:center;text-decoration:none}.dvbar .big{grid-column:1/-1;font-size:16px;min-height:50px}.dvbar [data-sign],.dvbar [data-charge]{grid-column:1/-1}
 .modal{background:var(--panel);border-radius:16px;width:min(760px,100%);padding:20px}
 .modal h2{font-size:24px;margin-bottom:14px}
@@ -131,7 +132,7 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none}
 <body>
 <header class="band">
   <div class="top">
-    <div><h1>MRC Properties</h1><small>Flats, tenants, agreements, rent &amp; bills — Ajman · <span id="appv">v15 · 22 Nov 2026</span></small></div>
+    <div><h1>MRC Properties</h1><small>Flats, tenants, agreements, rent &amp; bills — Ajman · <span id="appv">v16 · 22 Nov 2026</span></small></div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><div class="conn" id="conn"><i></i><span>Connecting…</span></div><button class="btn ghost" id="logout" style="color:#fff;border-color:#3b4f86;min-height:36px" hidden>Sign out</button></div>
   </div>
   <nav class="chips" id="chips" aria-label="Building"></nav>
@@ -488,13 +489,36 @@ function docPDF(m){
 const waNum=s=>{let n=String(s||'').replace(/\D/g,'');if(n.startsWith('00'))n=n.slice(2);if(n.startsWith('0'))n='971'+n.slice(1);if(n.length===9&&n.startsWith('5'))n='971'+n;return n};
 let curDoc=null;
 function openDoc(kind,id){inRoom=false;
-  IS=invState();const m=mkDoc(kind,id);if(!m){toast('Document not found');return}curDoc={kind,id,m};const a=m.x.a;
+  IS=invState();const m=mkDoc(kind,id);if(!m){toast('Document not found');return}curDoc={kind,id,m};showDoc()}
+function showDoc(){const {kind,m}=curDoc,a=m.x.a;
   const extra=kind==='agreement'&&a&&a.signed!=='Signed'?`<button class="btn ghost" data-sign="${a.id}">Mark as signed</button>`:(kind==='due'||kind==='warning')&&a&&afee(a)>0?`<button class="btn ghost" data-charge="${a.id}">Charge fine AED ${fmt(afee(a))} as invoice</button>`:'';
-  $('#modal').innerHTML=`<div class="dvtop"><b>${esc(m.title||'Document')} · ${esc(m.no||'')}</b><button class="x" id="cancel" aria-label="Close">✕</button></div><div class="dvpage"><div class="pgwrap"><div class="page">${docHTML(m)}</div></div></div><div class="dvbar"><button class="btn big" id="shr">📄 Send PDF on WhatsApp</button><a class="btn ghost wa" href="https://wa.me/${waNum(m.x.t.mobile)}?text=${encodeURIComponent(m.msg)}" target="_blank" rel="noopener">💬 Message</a><button class="btn ghost" id="dl">⬇ Save PDF</button><button class="btn ghost" id="cpy">Copy text</button>${extra}</div>`;
+  $('#modal').innerHTML=`<div class="dvtop"><b>${esc(m.title||'Document')} · ${esc(m.no||'')}${curDoc.edited?' · <span style="color:#ffb547">edited</span>':''}</b><button class="x" id="cancel" aria-label="Close">✕</button></div><div class="dvpage"><div class="pgwrap"><div class="page">${docHTML(m)}</div></div></div><div class="dvbar"><button class="btn big" id="shr">📄 Send PDF on WhatsApp</button><a class="btn ghost wa" href="https://wa.me/${waNum(m.x.t.mobile)}?text=${encodeURIComponent(m.msg)}" target="_blank" rel="noopener">💬 Message</a><button class="btn ghost" id="dl">⬇ Save PDF</button><button class="btn ghost" id="cpy">Copy text</button><button class="btn ghost" id="edt">✏️ Edit</button>${extra}</div>`;
   $('#ov').classList.add('on','doc');cur=null;fitPage();setTimeout(fitPage,60);
 }
 function fitPage(){const w=$('.dvpage'),p=$('.page');if(!w||!p)return;const W=794,sc=Math.min(1,(w.clientWidth-24)/W);p.style.transform=`scale(${sc})`;const pw=p.parentElement;pw.style.width=W*sc+'px';pw.style.height=p.offsetHeight*sc+'px'}
 addEventListener('resize',fitPage);
+// ✏️ edit a paper before sending: changes go into the PDF, the preview and the WhatsApp text (not into saved records)
+function docFields(m){const F=[],a=(p,l,v,o={})=>{if(v==null||typeof v==='object')return;F.push({p,l,v:String(v),...o})};
+  a('title','Title',m.title);a('no','Document no',m.no);a('date','Date',m.date,{date:1});
+  if(m.inv){const v=m.inv;F.push({h:'Details'});(v.ig||[]).forEach((r,n)=>a(`inv.ig.${n}.1`,r[0],r[1]));
+    F.push({h:'Charges'});(v.items||[]).forEach((r,n)=>{a(`inv.items.${n}.0`,'Item '+(n+1),r[0]);a(`inv.items.${n}.1`,'Amount (AED)',r[1])});
+    F.push({h:'Totals'});[['total','Total amount'],['paid','Payment received'],['bal','Balance due'],['prev','Previous balance'],['fine','Late fines'],['grand','Total payable now']].forEach(([k,l])=>{if(v[k]!==undefined&&v[k]!=='')a('inv.'+k,l,v[k])});a('inv.note','Note',v.note,{area:1})}
+  (m.blocks||[]).forEach((b,i)=>{
+    if(b.t==='h')a(`blocks.${i}.v`,'Heading',b.v);
+    else if(b.t==='p')a(`blocks.${i}.v`,'Paragraph',b.v,{area:1});
+    else if(b.t==='ol')a(`blocks.${i}.r`,'List – one point per line',b.r.join('\n'),{area:1,lines:1});
+    else if(b.t==='kv'){F.push({h:'Details'});b.r.forEach((r,j)=>a(`blocks.${i}.r.${j}.1`,r[0],r[1]))}
+    else if(b.t==='tb'){F.push({h:'Table'});b.r.forEach((r,j)=>r.forEach((c,k)=>a(`blocks.${i}.r.${j}.${k}`,'Row '+(j+1)+' · '+b.h[k],c)))}
+    else if(b.t==='tot'){a(`blocks.${i}.l`,'Total label',b.l);a(`blocks.${i}.v`,b.l,b.v)}
+    else if(b.t==='sig')b.p.forEach((q,j)=>{a(`blocks.${i}.p.${j}.0`,'Signature '+(j+1)+' – title',q[0]);a(`blocks.${i}.p.${j}.1`,'Signature '+(j+1)+' – name',q[1])})});
+  F.push({h:'WhatsApp message'});a('msg','Message text',m.msg,{area:1});return F}
+function openEditor(){if(!curDoc)return;const F=docFields(curDoc.m);curDoc.F=F;
+  $('#modal').innerHTML=`<div class="dvtop"><b>✏️ Edit · ${esc(curDoc.m.title||'')}</b><button class="x" id="cancel" aria-label="Close">✕</button></div><form id="edf" class="edf">${F.map((f,n)=>f.h?`<h3>${esc(f.h)}</h3>`:`<label class="fld"><span>${esc(f.l)}</span>${f.area?`<textarea name="f${n}" rows="${Math.min(8,Math.max(2,Math.ceil(f.v.length/48)+f.v.split('\n').length-1))}">${esc(f.v)}</textarea>`:`<input name="f${n}" ${f.date?'type="date"':''} value="${esc(f.v)}">`}</label>`).join('')}</form>
+  <div class="dvbar"><button class="btn big" id="edok">✓ Apply changes</button><button class="btn ghost" id="edrs">↺ Reset to original</button><button class="btn ghost" id="edcx">Back</button></div>`}
+function applyEditor(){const f=$('#edf');if(!f||!curDoc)return;const m=curDoc.m;
+  curDoc.F.forEach((x,n)=>{if(x.h)return;const el=f.elements['f'+n];if(!el)return;let v=el.value;if(x.lines)v=v.split('\n').map(s=>s.trim()).filter(Boolean);
+    const ks=x.p.split('.');let o=m;for(let i=0;i<ks.length-1;i++)o=o[ks[i]];o[ks[ks.length-1]]=v});
+  curDoc.edited=true;showDoc();toast('Changes applied – Send / Save PDF uses the edited paper')}
 function mkFile(){
   const m=curDoc?.m;if(!m)return null;const name=(m.file+'_'+(m.x.t.name||'')).replace(/[^A-Za-z0-9_-]+/g,'_').replace(/_+$/,'');
   if(window.jspdf){try{const b=docPDF(m);return{m,blob:b instanceof Blob?b:new Blob([b],{type:'application/pdf'}),fn:name+'.pdf'}}catch(e){toast('PDF error: '+(e.message||e)+' – saving printable page')}}
@@ -866,6 +890,10 @@ document.addEventListener('click',e=>{
   if(g('a.wa')||(g('a.btn')&&g('[data-doc]')))return;
   if(el=g('#dl')){download()}
   else if(g('#shr')){sharePDF()}
+  else if(g('#edt')){openEditor()}
+  else if(g('#edok')){applyEditor()}
+  else if(g('#edcx')){showDoc()}
+  else if(g('#edrs')){openDoc(curDoc.kind,curDoc.id)}
   else if(g('#ics')){icsExport()}
   else if(el=g('[data-payamt]')){const f=$('#frm');if(f){f.paid.value=el.dataset.payamt;payInfo()}}
   else if(g('#chpw')){$('#modal').innerHTML=`<h2>Change password</h2><form id="pwf"><label class="fld"><span>New password (min 8)</span><input id="np" type="password" minlength="8" required autocomplete="new-password"></label><div class="acts"><span class="sp"></span><button type="button" class="btn ghost" id="cancel">Cancel</button><button class="btn">Save</button></div></form>`;$('#ov').classList.remove('doc');$('#ov').classList.add('on');$('#pwf').addEventListener('submit',async ev=>{ev.preventDefault();ev.stopPropagation();const {error}=await db.auth.updateUser({password:$('#np').value});toast(error?'Could not change: '+error.message:'Password changed');if(!error)close()})}
