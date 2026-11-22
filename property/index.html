@@ -163,6 +163,19 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none}
 .morel button{min-height:56px;border-radius:12px;border:1px solid var(--line);border-left:5px solid var(--tc);background:var(--bg);color:var(--ink);font:inherit;font-weight:600;text-align:left;padding:0 14px;cursor:pointer}
 .morel button.on{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 10%,var(--panel))}
 @media(min-width:900px){.tabs{left:50%;right:auto;transform:translateX(-50%);width:560px;bottom:12px;border-radius:18px;border:1px solid var(--line)}}
+
+.hgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:4px 0 16px}
+.htile,.hopt{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:16px 14px 14px;min-height:132px;border-radius:18px;border:1px solid var(--line);border-top:6px solid var(--hc,var(--acc));background:var(--panel);color:var(--ink);font:inherit;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.htile:active,.hopt:active{transform:scale(.98)}
+.htile .hi,.hopt .hi{font-size:26px;line-height:1;margin-bottom:4px}
+.htile b{font:700 17px/1.2 "Red Hat Display",sans-serif}
+.hl{font-size:12.5px;color:var(--mute);line-height:1.35}
+.hl em{font-style:normal;font-weight:700}.hl .bad{color:var(--bad)}.hl .okt{color:var(--ok)}
+.hgo{position:absolute;right:12px;top:12px;font-size:20px;color:var(--mute)}
+.hgrid.opt .hopt{min-height:104px;border-top-width:1px;border-left:5px solid var(--acc)}
+.hopt b{font-size:15.5px}
+.hubh{border-left:6px solid var(--hc);padding:4px 0 4px 12px;margin-bottom:12px}.hubh h2{font-size:21px;margin:8px 0 4px}
+@media(min-width:760px){.hgrid{grid-template-columns:repeat(3,1fr)}}
 </style>
 <style id="shc"></style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -172,7 +185,7 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none}
 <body>
 <header class="band">
   <div class="top">
-    <div class="brand"><h1>MRC Properties</h1><small><span id="appv">v25 · 23 Nov 2026</span> · <button id="upd" type="button" class="hlink">⟳ Update</button></small></div>
+    <div class="brand"><h1>MRC Properties</h1><small><span id="appv">v26 · 23 Nov 2026</span> · <button id="upd" type="button" class="hlink">⟳ Update</button></small></div>
     <div class="hr"><div class="conn" id="conn"><i></i><span>Connecting…</span></div><button class="hlink" id="logout" hidden>Sign out</button></div>
   </div>
   <nav class="chips" id="chips" aria-label="Building"></nav>
@@ -216,7 +229,7 @@ const SCH={
  assets:{t:'Item & warranty',f:[['unit','Unit','unit'],['item','Item (e.g. Gas stove)'],['brand','Brand / model'],['qty','Quantity','num'],['price','Price each (AED, incl. VAT)','num'],['bought','Bought on','date'],['shop','Shop'],['rno','Receipt / invoice no'],['warrUntil','Warranty until','date'],['status','Status','sel',['In unit','Under repair','Replaced','Removed']],['photo','Warranty card / receipt photo','photo'],['notes','Notes','area']]},
  bills:{t:'Bill / expense',f:[['date','Date / bill month','date'],['bld','Building','bld'],['unit','Unit (blank = whole building)','unit'],['cat','Category','sel',CATS],['desc','Description / work done'],['acc','Account / bill no'],['amount','Amount (AED)','num'],['paidBy','Paid by','sel',['Owner','Tenant']],['acct','Paid from (account)','acct'],['status','Status','sel',BST],['_','Paid to (for payment voucher)','h'],['payee','Paid to – name / company'],['payeeMob','Paid to – mobile (WhatsApp)'],['method','Payment method','sel',METH],['ref','Cheque / transfer ref'],['vno','Their invoice / bill no'],['photo','Photo of their invoice / receipt','photo'],['recover','Recover from tenant (AED)','num'],['notes','Notes','area']]}
 };
-const TABS=[['home','Today'],['rooms','Rooms'],['overview','Overview'],['accounts','💼 Accounts'],['docs','Vouchers'],['units','Units'],['tenants','Tenants'],['agreements','Agreements'],['payments','Rent'],['bills','Bills & expenses'],['assets','Items & warranty'],['buildings','Buildings']];
+const TABS=[['home','Home'],['important','Important today'],['maint','Maintenance'],['rooms','Rooms'],['overview','Overview'],['accounts','💼 Accounts'],['docs','Vouchers'],['units','Units'],['tenants','Tenants'],['agreements','Agreements'],['payments','Rent'],['bills','Bills & expenses'],['assets','Items & warranty'],['buildings','Buildings']];
 const S={buildings:[],units:[],tenants:[],agreements:[],payments:[],bills:[],invoices:[],settings:[],cheques:[],tickets:[],assets:[],accounts:[],moves:[]};
 const IMGC={};
 const iso=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
@@ -667,6 +680,28 @@ function alerts(){
   return L.sort((a,b)=>a[0]-b[0]);
 }
 const kli=(attr,l1,l2,r1,r2)=>`<li ${attr}><div><b>${l1}</b>${l2?`<div class="sub">${l2}</div>`:''}</div><div class="n">${r1||''}${r2?`<div class="sub">${r2}</div>`:''}</div></li>`;
+
+// ===== Home: one tile per building + Accounts, Maintenance, Important; a building tile opens that building's options =====
+function homeView(){
+  if(bsel!=='all')return hubView(bsel);
+  const bs=[...S.buildings].sort((a,b)=>(a.code||'').localeCompare(b.code||''));
+  const openT=S.tickets.filter(k=>k.status!=='Done').length,pendAll=S.agreements.reduce((s,a)=>s+aopen(a).reduce((x,i)=>x+IS[i.id].bal,0),0);
+  const tile=(attr,col,ico,name,lines)=>`<button class="htile" ${attr} style="--hc:${col}"><span class="hi">${ico}</span><b>${name}</b>${lines.map(l=>`<span class="hl">${l}</span>`).join('')}<span class="hgo">›</span></button>`;
+  return`<div class="hgrid">${bs.map(b=>{const x=stats(b.id),tk=S.tickets.filter(k=>k.status!=='Done'&&by('units',k.unit)?.bld===b.id).length;
+      return tile(`data-hub="${b.id}"`,bcol(b.id),'🏢',esc(b.name),[`${x.occ}/${x.n} rooms let${x.vac?' · '+x.vac+' empty':''}`,x.bal?`<em class="bad">Pending AED ${fmt(x.bal)}</em>`:'<em class="okt">No rent pending</em>',...(tk?[`🛠 ${tk} open`]:[])])}).join('')}
+    ${tile('data-gotab="accounts"','#4f46e5','💼','Accounts',['Income · expenses · bank balance','Each building separately'])}
+    ${tile('data-gotab="maint"','#f59e0b','🛠','Maintenance',[openT?`<em class="bad">${openT} open jobs</em>`:'<em class="okt">Nothing open</em>','Complaints & repairs'])}
+    ${tile('data-gotab="important"','#dc2626','⭐','Important today',[pendAll?`<em class="bad">Pending AED ${fmt(pendAll)}</em>`:'<em class="okt">Nothing pending</em>','Collect today · coming · cheques'])}
+  </div>`}
+function hubView(bid){const b=by('buildings',bid)||{},x=stats(bid),c=bcol(bid);
+  const n=(f)=>f.length,ag=S.agreements.filter(a=>abld(a)===bid&&live(a)),tk=S.tickets.filter(k=>k.status!=='Done'&&by('units',k.unit)?.bld===bid);
+  const pend=S.agreements.filter(a=>abld(a)===bid).filter(a=>aopen(a).length).length,it=S.assets.filter(q=>by('units',q.unit)?.bld===bid).length;
+  const T=(tb,ico,name,sub)=>`<button class="hopt" data-hubtab="${tb}"><span class="hi">${ico}</span><b>${name}</b><span class="hl">${sub}</span></button>`;
+  return`<div class="hubh" style="--hc:${c}"><button class="btn ghost mini" data-hub="all">← Home</button><h2>${bdot(bid)}${esc(b.name||'')}</h2><p class="sub">${x.occ}/${x.n} rooms let · ${x.vac} empty · Pending <b style="color:var(--bad)">AED ${fmt(x.bal)}</b> · Received this month AED ${fmt(x.col)}</p></div>
+  <div class="hgrid opt">${T('important','⭐','Today','Collect · pending · coming')}${T('rooms','🚪','Rooms',x.n+' rooms')}${T('pending','⏰','Rent pending',pend?pend+' rooms · AED '+fmt(x.bal):'None')}${T('payments','💵','Rent received','This month AED '+fmt(x.col))}${T('tenants','👤','Tenants',ag.length+' active')}${T('agreements','📄','Agreements',ag.length+' active')}${T('accounts','💼','Accounts','Income · expenses · net')}${T('bills','🧾','Bills & expenses','Etihad · sewerage · repairs')}${T('maint','🛠','Maintenance',tk.length?tk.length+' open':'Nothing open')}${T('assets','🔧','Items & warranty',it+' items')}${T('docs','📑','Papers','Invoices · receipts · notices')}${T('buildings','🏢','Building details','Lease · owner · accounts')}</div>`}
+function maintView(){const L=S.tickets.filter(k=>inB(by('units',k.unit)?.bld)).filter(k=>hit([k,ulab(by('units',k.unit))]));
+  const grp=[['Open',L.filter(k=>k.status!=='Done'&&k.status!=='In progress')],['In progress',L.filter(k=>k.status==='In progress')],['Done',L.filter(k=>k.status==='Done').slice(0,30)]];
+  return grp.map(([g,ks])=>ks.length?`<div class="card"><h2>${g} <span class="sub">${ks.length}</span></h2><table class="kvt"><tbody>${ks.sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(k=>`<tr data-open="tickets" data-id="${k.id}"><th>${bdot(by('units',k.unit)?.bld)}<b>${esc(ulab(by('units',k.unit)))}</b> · ${esc(k.kind||'')}${k.urgent==='Yes'?' 🚨':''}<div class="sub">${esc(k.desc||'')}${k.date?' · '+fd(k.date):''}${k.cost?' · AED '+fmt(k.cost):''}</div></th><td class="n">${tag(k.status||'Open',k.status==='Done'?'ok':k.status==='In progress'?'warn':'bad')}</td></tr>`).join('')}</tbody></table></div>`:'').join('')||'<div class="empty">No maintenance jobs.</div>'}
 function todayView(){
   const now=todayDate(),td=iso(now),cm=td.slice(0,7),sum=(L,f)=>L.reduce((x,y)=>x+f(y),0);
   const ags=S.agreements.filter(a=>inB(abld(a))&&live(a));
@@ -963,11 +998,11 @@ function render(){
   IS=invState();preloadImgs();
   const bs=[...S.buildings].sort((a,b)=>(a.code||'').localeCompare(b.code||''));
   $('#chips').innerHTML=[['all','All buildings'],...bs.map(b=>[b.id,b.name||b.code])].map(([id,n])=>`<button data-bsel="${id}" aria-pressed="${bsel===id}" style="--bc:${id==='all'?'#ffffff':bcol(id)}">${id==='all'?'':bdot(id)}${esc(n)}</button>`).join('');
-  const MAIN=[['home','🏠','Today'],['rooms','🚪','Rooms'],['accounts','💼','Accounts'],['docs','🧾','Papers']],isMore=!MAIN.some(m=>m[0]===tab);
+  const MAIN=[['home','🏠','Home'],['rooms','🚪','Rooms'],['accounts','💼','Accounts'],['docs','🧾','Papers']],isMore=!MAIN.some(m=>m[0]===tab);
   $('#tabs').innerHTML=MAIN.map(([k,i,n])=>`<button role="tab" data-tab="${k}" aria-selected="${tab===k}"><i>${i}</i><span>${n}</span></button>`).join('')+`<button role="tab" data-more="1" aria-selected="${isMore}"><i>☰</i><span>${isMore?esc((TABS.find(x=>x[0]===tab)||[,'More'])[1]):'More'}</span></button>`;
-  $('#q').hidden=tab==='overview'||tab==='home';$('#month').hidden=!['overview','rooms','payments','bills','docs','accounts'].includes(tab);
-  $('#add').textContent='+ '+(tab==='overview'||tab==='home'?'Rent payment':tab==='rooms'?'Complaint / maintenance':tab==='docs'?'Invoice':tab==='accounts'?'Bill / expense':SCH[tab].t);
-  $('#main').innerHTML=tab==='home'?todayView():tab==='overview'?overview():tab==='rooms'?roomsView():tab==='accounts'?accountsView():LIST[tab]();
+  $('#q').hidden=['overview','home','important'].includes(tab);$('#chips').style.display=tab==='home'&&bsel==='all'?'none':'';$('#add').style.display=tab==='home'&&bsel==='all'?'none':'';$('#month').hidden=!['overview','rooms','payments','bills','docs','accounts'].includes(tab);
+  $('#add').textContent='+ '+(['overview','home','important'].includes(tab)?'Rent payment':tab==='rooms'||tab==='maint'?'Complaint / maintenance':tab==='docs'?'Invoice':tab==='accounts'?'Bill / expense':SCH[tab].t);
+  $('#main').innerHTML=tab==='home'?homeView():tab==='important'?todayView():tab==='maint'?maintView():tab==='overview'?overview():tab==='rooms'?roomsView():tab==='accounts'?accountsView():LIST[tab]();
 }
 function opts(t,v){
   const o=(val,lab)=>`<option value="${esc(val)}"${val===v?' selected':''}>${esc(lab)}</option>`;
@@ -1037,6 +1072,8 @@ document.addEventListener('click',e=>{
   else if(g('#shr')){sharePDF()}
   else if(el=g('[data-pmode]')){pmode=el.dataset.pmode;render()}
   else if(el=g('[data-accb]')){accB=el.dataset.accb||null;if(!accB&&bsel!=='all'){bsel='all'}render();scrollTo(0,0)}
+  else if(el=g('[data-hub]')){bsel=el.dataset.hub;tab='home';accB=null;render();scrollTo(0,0)}
+  else if(el=g('[data-hubtab]')){const k=el.dataset.hubtab;if(k==='pending'){tab='important'}else tab=k;accB=null;render();scrollTo(0,0)}
   else if(el=g('[data-gotab]')){tab=el.dataset.gotab;accB=null;if($('#ov').classList.contains('on'))close();render();scrollTo(0,0)}
   else if(g('[data-more]')){$('#modal').innerHTML=`<h2>More</h2><div class="morel">${TABS.filter(([k])=>!['home','rooms','accounts','docs'].includes(k)).map(([k,n])=>`<button data-gotab="${k}" class="${tab===k?'on':''}" style="--tc:${TCOL[k]||'#888'}">${n}</button>`).join('')}</div><div class="acts"><span class="sp"></span><button type="button" class="btn ghost" id="cancel">Close</button></div>`;$('#ov').classList.add('on');$('#ov').classList.remove('doc')}
 
@@ -1058,7 +1095,7 @@ document.addEventListener('click',e=>{
   else if(el=g('[data-b]')){bsel=el.dataset.b;render()}
   else if((el=g('[data-open]'))&&!g('#modal')){openForm(el.dataset.open,el.dataset.id)}
   else if(el=g('[data-new]')){openForm(el.dataset.new,null,el.dataset.pre?JSON.parse(el.dataset.pre):null)}
-  else if(g('#add')){openForm(tab==='overview'||tab==='home'?'payments':tab==='rooms'?'tickets':tab==='docs'?'invoices':tab==='accounts'?'bills':tab)}
+  else if(g('#add')){openForm(['overview','home','important'].includes(tab)?'payments':tab==='rooms'||tab==='maint'?'tickets':tab==='docs'?'invoices':tab==='accounts'?'bills':tab)}
   else if(g('#cancel')||e.target===$('#ov'))close();
   else if(el=g('#del')){if(el.dataset.sure){const {c,id}=cur;write({op:'del',c,id},'Deleted')}else{el.dataset.sure=1;el.textContent='Tap again to delete'}}
 });
