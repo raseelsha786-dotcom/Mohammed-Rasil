@@ -131,7 +131,7 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none}
 <body>
 <header class="band">
   <div class="top">
-    <div><h1>MRC Properties</h1><small>Flats, tenants, agreements, rent &amp; bills — Ajman</small></div>
+    <div><h1>MRC Properties</h1><small>Flats, tenants, agreements, rent &amp; bills — Ajman · <span id="appv">v13 · 22 Nov 2026</span></small></div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><div class="conn" id="conn"><i></i><span>Connecting…</span></div><button class="btn ghost" id="logout" style="color:#fff;border-color:#3b4f86;min-height:36px" hidden>Sign out</button></div>
   </div>
   <nav class="chips" id="chips" aria-label="Building"></nav>
@@ -946,6 +946,6 @@ async function startSession(u){
 
 }
 </script>
-<script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))</script>
+<script>if('serviceWorker' in navigator)addEventListener('load',()=>{let r0=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(r0){r0=false;location.reload()}});navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{r.update();document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')r.update()})}).catch(()=>{})})</script>
 </body>
 </html>
