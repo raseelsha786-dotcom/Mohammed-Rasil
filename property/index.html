@@ -131,7 +131,7 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none}
 <body>
 <header class="band">
   <div class="top">
-    <div><h1>MRC Properties</h1><small>Flats, tenants, agreements, rent &amp; bills — Ajman · <span id="appv">v13 · 22 Nov 2026</span></small></div>
+    <div><h1>MRC Properties</h1><small>Flats, tenants, agreements, rent &amp; bills — Ajman · <span id="appv">v14 · 22 Nov 2026</span></small></div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><div class="conn" id="conn"><i></i><span>Connecting…</span></div><button class="btn ghost" id="logout" style="color:#fff;border-color:#3b4f86;min-height:36px" hidden>Sign out</button></div>
   </div>
   <nav class="chips" id="chips" aria-label="Building"></nav>
@@ -248,6 +248,8 @@ function invState(){
   return m;
 }
 const ainv=a=>S.invoices.filter(i=>i.agr===a.id);
+const invLines=i=>{const L=[['Rent',+i.rent||0],['SEWA / Sewerage',+i.sewa||0],['Wi-Fi',+i.wifi||0],['Electricity & water',+i.ew||0],['Discount',-(+i.disc||0)]].filter(r=>r[1]);return L.length?L:[[i.kind||'Charges',+i.amount||0]]};
+const chargesTb=list=>list.length?{t:'tb',h:['Charges','Amount'],w:[132,50],r:list.flatMap(i=>invLines(i).map(([l,v])=>[(list.length>1?i.ino+' · ':'')+l,AED(v)]))}:null;
 const abal=a=>ainv(a).reduce((s,i)=>s+(+i.amount||0),0)-S.payments.filter(p=>p.agr===a.id&&(p.pkind||'Rent')==='Rent').reduce((s,p)=>s+(+p.paid||0),0);
 const aopen=a=>ainv(a).filter(i=>IS[i.id]&&IS[i.id].bal>0&&IS[i.id].od>=0).sort((x,y)=>(x.dueDate||'').localeCompare(y.dueDate||''));
 const afee=a=>Math.max(0,ainv(a).reduce((s,i)=>s+(IS[i.id]?.fee||0),0)-ainv(a).filter(i=>i.kind==='Late fee').reduce((s,i)=>s+(+i.amount||0),0));
@@ -338,7 +340,7 @@ function mkDoc(kind,id){
         return{title:'Statement of Unpaid Rent',no:'UP-'+a.no+'-'+today.replace(/-/g,''),date:today,x,file:a.no+'_Unpaid',blocks:[...head0,
         {t:'p',v:un.length?'The following invoices are unpaid or part paid as of '+fd(today)+':':'There are no unpaid invoices on this tenancy as of '+fd(today)+'.'},
         ...(un.length?[{t:'tb',h:['Invoice','Period','Due date','Status','Balance'],w:[36,52,28,30,34],r:un.map(i=>{const s=IS[i.id],od=s.od;return[i.ino,i.from?fd(i.from)+' – '+fd(i.to):'',fd(i.dueDate),(s.got>0?'Part paid':'Unpaid')+(od>0?' · '+od+'d late':od===0?' · due today':' · not due yet'),AED(s.bal)]})},
-          {t:'tot',l:'Total unpaid',v:AED(tot)},...(fee?[{t:'tot',l:'Late fines accrued',v:AED(fee)},{t:'tot',l:'Total payable',v:AED(tot+fee)}]:[])]:[]),
+          chargesTb(un),{t:'tot',l:'Total unpaid',v:AED(tot)},...(fee?[{t:'tot',l:'Late fines accrued',v:AED(fee)},{t:'tot',l:'Total payable',v:AED(tot+fee)}]:[])]:[]),
         {t:'p',v:un.length?'Kindly settle the amount on or before the due dates shown. '+feeText(c):'Thank you.'},...(c.bank&&un.length?[{t:'p',v:'Bank details: '+c.bank}]:[]),{t:'sig',p:[['For '+c.name,c.signatory]]}],
         msg:`Dear ${x.t.name||'Tenant'},\n\n📋 *UNPAID RENT STATEMENT*\n🏠 ${x.unit}${x.b.name?' · '+x.b.name:''}\n${un.length?un.map(i=>`• ${i.ino} – due ${fd(i.dueDate)}: ${AED(IS[i.id].bal)}`).join('\n')+`\n*Total: ${AED(tot+fee)}*${fee?` (incl. fine ${AED(fee)})`:''}`:'No unpaid rent. Thank you!'}\n\n${c.brand||c.name}${c.phone?'\n📞 '+c.phone:''}`}}
       const nd=+c.vacateNotice||30,by_=a.vnBy||(()=>{const d=todayDate();d.setDate(d.getDate()+nd);return iso(d)})(),un=all.filter(i=>IS[i.id].bal>0.005),tot=un.reduce((s,i)=>s+IS[i.id].bal,0)+afee(a);
@@ -356,12 +358,12 @@ function mkDoc(kind,id){
     const tb=op.length?{t:'tb',h:['Invoice','Period','Due date','Status','Balance'],w:[38,52,30,30,30],r:op.map(i=>[i.ino,i.from?fd(i.from)+' – '+fd(i.to):'',fd(i.dueDate),_dl(IS[i.id].od),AED(IS[i.id].bal)])}:{t:'p',v:'No unpaid rent is recorded on this tenancy as of '+fd(uaeToday())+'.'};
     const head=[{t:'kv',r:[['To',x.t.name||''],['Mobile',x.t.mobile||''],['Unit',x.unit+' · '+(x.b.name||'')],['Agreement',a.no]]}];
     if(kind==='due')return{title:'Rent Due Notice',no:'DN-'+a.no+'-'+uaeToday().replace(/-/g,''),date:uaeToday(),x,file:a.no+'_DueNotice',blocks:[...head,
-      {t:'p',v:allFuture?`This is a friendly reminder that rent of ${AED(tot)} falls due on ${fd(op[0].dueDate)}:`:`This is a reminder that the following amount${op.length>1?'s are':' is'} due under your tenancy agreement:`},tb,{t:'tot',l:allFuture?'Total rent due':'Total rent outstanding',v:AED(tot)},
+      {t:'p',v:allFuture?`This is a friendly reminder that rent of ${AED(tot)} falls due on ${fd(op[0].dueDate)}:`:`This is a reminder that the following amount${op.length>1?'s are':' is'} due under your tenancy agreement:`},tb,...(op.length?[chargesTb(op)]:[]),{t:'tot',l:allFuture?'Total rent due':'Total rent outstanding',v:AED(tot)},
       ...(fee?[{t:'tot',l:'Late fines accrued (Clause 5)',v:AED(fee)},{t:'tot',l:'Total payable',v:AED(tot+fee)}]:[]),
       {t:'p',v:`${allFuture?`Kindly pay on or before ${fd(op[0].dueDate)}.`:'Kindly pay the full amount immediately.'} ${feeText(c)} Please ignore this notice if you have already paid.`},{t:'sig',p:[['For '+c.name,c.signatory]]}],
-      msg:`Dear ${x.t.name||'Tenant'},\n\n⏰ *RENT DUE NOTICE*\n🏠 ${x.unit}${x.b.name?' · '+x.b.name:''}\nAmount due: *${AED(tot+fee)}*${op.length?`\nDue date: ${fd(op[0].dueDate)}`:''}${mx?`\nDays late: ${mx}`:''}\n\n${allFuture?'Please pay on or before the due date to avoid fines.':'Please pay immediately to avoid further fines.'}\n\nThank you.\n\n${c.brand||c.name}${c.phone?'\n📞 '+c.phone:''}`};
+      msg:`Dear ${x.t.name||'Tenant'},\n\n⏰ *RENT DUE NOTICE*\n🏠 ${x.unit}${x.b.name?' · '+x.b.name:''}\n${op.length===1?invLines(op[0]).map(([l,v])=>`${l}: ${AED(v)}`).join('\n')+'\n':''}Amount due: *${AED(tot+fee)}*${op.length?`\nDue date: ${fd(op[0].dueDate)}`:''}${mx?`\nDays late: ${mx}`:''}\n\n${allFuture?'Please pay on or before the due date to avoid fines.':'Please pay immediately to avoid further fines.'}\n\nThank you.\n\n${c.brand||c.name}${c.phone?'\n📞 '+c.phone:''}`};
     return{title:'Warning Notice — Non-payment of Rent',no:'WN-'+a.no+'-'+uaeToday().replace(/-/g,''),date:uaeToday(),x,file:a.no+'_Warning',blocks:[...head,
-      {t:'p',v:`Despite earlier reminders, the following rent remains unpaid${mx?` for up to ${mx} days`:''}:`},tb,{t:'tot',l:'Rent outstanding',v:AED(tot)},{t:'tot',l:'Late fines (Clause 5)',v:AED(fee)},{t:'tot',l:'Total payable',v:AED(tot+fee)},
+      {t:'p',v:`Despite earlier reminders, the following rent remains unpaid${mx?` for up to ${mx} days`:''}:`},tb,...(op.length?[chargesTb(op)]:[]),{t:'tot',l:'Rent outstanding',v:AED(tot)},{t:'tot',l:'Late fines (Clause 5)',v:AED(fee)},{t:'tot',l:'Total payable',v:AED(tot+fee)},
       {t:'p',v:`You are hereby formally notified to pay the total amount within ${+c.payWithin||3} (${NUMW[+c.payWithin||3]||''}) days from the date of this notice, i.e. on or before ${fd(wDeadline(a))||''}. If payment is not received, the Lessor will terminate the tenancy agreement and apply to the competent rental dispute authority in Ajman for eviction and recovery of all amounts due, together with fines, fees and legal costs, as provided in the tenancy agreement and Ajman Law No. (2) of 2017 regulating landlord-tenant relations.`},
       {t:'p',v:'This notice is issued without prejudice to any other rights of the Lessor.'},{t:'sig',p:[['For '+c.name,c.signatory],['Received by Tenant',x.t.name||'']]}],
       msg:`Dear ${x.t.name||'Tenant'},\n\n⚠️ *FINAL WARNING – RENT OVERDUE*\n🏠 ${x.unit}${x.b.name?' · '+x.b.name:''}\nAmount overdue: *${AED(tot+fee)}*${mx?`\nDays late: ${mx}`:''}\n\n${(()=>{const n=days(wDeadline(a));return n==null?'':`⏳ *${leftTxt(n).toUpperCase()}* to pay (deadline ${fd(wDeadline(a))})\n\n`})()}Please pay within *${+c.payWithin||3} days*. Otherwise the tenancy may be terminated and the matter referred to the Ajman Rental Dispute authority.\n\nThis is a formal notice.\n\n${c.brand||c.name}${c.phone?'\n📞 '+c.phone:''}`};
