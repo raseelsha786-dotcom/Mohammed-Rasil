@@ -103,6 +103,7 @@ body{padding-top:env(safe-area-inset-top)}body::before{content:'';position:fixed
 .dvtop{position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:10px;padding:10px 12px 10px 16px;padding-top:max(10px,env(safe-area-inset-top));background:var(--band);color:#fff}.dvtop b{flex:1;font:700 16px/1.2 "Red Hat Display",sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dvtop .x{flex:none;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.14);color:#fff;font-size:20px;cursor:pointer}
 .dvpage{flex:1;padding:12px;overflow:hidden}.pgwrap{margin:0 auto}.page{width:794px;transform-origin:0 0;background:#fff;box-shadow:0 4px 18px rgba(10,20,50,.22);border-radius:3px}
 .ph img{display:block;max-width:100%;max-height:260px;border-radius:10px;border:1px solid var(--line);margin:4px 0 8px}
+.kvt{width:100%;border-collapse:collapse}.kvt th{text-align:left;font-weight:500;padding:6px 4px;border-bottom:1px solid var(--line)}.kvt td{padding:6px 4px;border-bottom:1px solid var(--line);white-space:nowrap}
 .edf{padding:12px 14px 20px;overflow:auto;flex:1}.edf h3{margin:16px 0 6px;font-size:15px;color:var(--mute)}.edf textarea{width:100%}
 .dvbar{position:sticky;bottom:0;z-index:3;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:10px 12px;padding-bottom:max(10px,env(safe-area-inset-bottom));background:var(--panel);border-top:1px solid var(--line);box-shadow:0 -4px 14px rgba(0,0,0,.08)}.dvbar .btn{padding:0 8px;font-size:14px;min-height:46px;display:flex;align-items:center;justify-content:center;text-decoration:none}.dvbar .big{grid-column:1/-1;font-size:16px;min-height:50px}.dvbar [data-sign],.dvbar [data-charge]{grid-column:1/-1}
 .modal{background:var(--panel);border-radius:16px;width:min(760px,100%);padding:20px}
@@ -133,7 +134,7 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none}
 <body>
 <header class="band">
   <div class="top">
-    <div><h1>MRC Properties</h1><small>Flats, tenants, agreements, rent &amp; bills — Ajman · <span id="appv">v19 · 22 Nov 2026</span> <button id="upd" type="button" style="background:none;border:1px solid #3b4f86;color:#cdd6ee;border-radius:12px;padding:2px 10px;font-size:12px;cursor:pointer">⟳ Update</button></small></div>
+    <div><h1>MRC Properties</h1><small>Flats, tenants, agreements, rent &amp; bills — Ajman · <span id="appv">v20 · 22 Nov 2026</span> <button id="upd" type="button" style="background:none;border:1px solid #3b4f86;color:#cdd6ee;border-radius:12px;padding:2px 10px;font-size:12px;cursor:pointer">⟳ Update</button></small></div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><div class="conn" id="conn"><i></i><span>Connecting…</span></div><button class="btn ghost" id="logout" style="color:#fff;border-color:#3b4f86;min-height:36px" hidden>Sign out</button></div>
   </div>
   <nav class="chips" id="chips" aria-label="Building"></nav>
@@ -160,7 +161,7 @@ const PER=['Monthly','Yearly','Weekly','Daily'],FX={Daily:30,Weekly:52/12,Monthl
 const TYPES=['Room','Studio','Flat 1BHK','Flat 2BHK','Flat 3BHK','Bed space','Shop','Mezzanine','Ground floor','Rooftop','Office','Other'];
 const FURN=['Furnished','Semi-furnished','Unfurnished'],UTIL=['Included in rent','Tenant pays','Owner pays'];
 const METH=['Cash','Cheque','Bank transfer','Card','Online'],CHQ=['Received','Deposited','Cleared','Bounced'];
-const CATS=['Electricity & water (Etihad WE)','Sewerage','WiFi / internet','Appliances / furniture','Maintenance','Cleaning','Plumbing','Electrical','AC','Painting','Pest control','Watchman','Municipality','Other'];
+const CATS=['Electricity & water (Etihad WE)','Sewerage','WiFi / internet','Building rent (lease)','Appliances / furniture','Maintenance','Cleaning','Plumbing','Electrical','AC','Painting','Pest control','Watchman','Municipality','Other'];
 const UC=CATS.slice(0,3),BST=['Unpaid','Paid','Partly paid'],YN=['No','Yes'];
 const SCH={
  buildings:{t:'Building',f:[['code','Short code (e.g. HAM1)'],['name','Building name'],['area','Area / address'],['bname','Official building name (Tasdeeq)'],['district','District'],['sector','Sector'],['plot','Plot no'],['parcel','Parcel no'],['makani','Makani no'],['map','Google Maps link'],['owner','Owner / landlord'],['leaseFrom','Lease from','date'],['leaseTo','Lease to','date'],['leaseCost','Annual lease cost (AED)','num'],['_','Main accounts','h'],['elecAc','Etihad WE main a/c'],['sewAc','Sewerage a/c'],['contact','Watchman / contact'],['notes','Notes','area']]},
@@ -175,7 +176,7 @@ const SCH={
  assets:{t:'Item & warranty',f:[['unit','Unit','unit'],['item','Item (e.g. Gas stove)'],['brand','Brand / model'],['qty','Quantity','num'],['price','Price each (AED, incl. VAT)','num'],['bought','Bought on','date'],['shop','Shop'],['rno','Receipt / invoice no'],['warrUntil','Warranty until','date'],['status','Status','sel',['In unit','Under repair','Replaced','Removed']],['photo','Warranty card / receipt photo','photo'],['notes','Notes','area']]},
  bills:{t:'Bill / expense',f:[['date','Date / bill month','date'],['bld','Building','bld'],['unit','Unit (blank = whole building)','unit'],['cat','Category','sel',CATS],['desc','Description / vendor'],['acc','Account / bill no'],['amount','Amount (AED)','num'],['paidBy','Paid by','sel',['Owner','Tenant']],['status','Status','sel',BST],['recover','Recover from tenant (AED)','num'],['notes','Notes','area']]}
 };
-const TABS=[['home','Today'],['rooms','Rooms'],['overview','Overview'],['docs','Vouchers'],['units','Units'],['tenants','Tenants'],['agreements','Agreements'],['payments','Rent'],['bills','Bills & expenses'],['assets','Items & warranty'],['buildings','Buildings']];
+const TABS=[['home','Today'],['rooms','Rooms'],['overview','Overview'],['accounts','Income & expenses'],['docs','Vouchers'],['units','Units'],['tenants','Tenants'],['agreements','Agreements'],['payments','Rent'],['bills','Bills & expenses'],['assets','Items & warranty'],['buildings','Buildings']];
 const S={buildings:[],units:[],tenants:[],agreements:[],payments:[],bills:[],invoices:[],settings:[],cheques:[],tickets:[],assets:[]};
 const IMGC={};
 const iso=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
@@ -183,7 +184,7 @@ const iso=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice
 const uaeCalendar=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Dubai',year:'numeric',month:'2-digit',day:'2-digit'});
 const uaeToday=(now=new Date())=>uaeCalendar.format(now);
 const todayDate=()=>D(uaeToday());
-let db=null,canWrite=true,bsel='all',tab='home',q='',month=uaeToday().slice(0,7),online=false;
+let db=null,canWrite=true,bsel='all',tab='home',q='',month=uaeToday().slice(0,7),online=false,pmode='m';
 const LK='mrc-sb-data-v1',OK='mrc-sb-outbox-v1';
 const ls={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch(_){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(_){}}};
 let outbox=ls.get(OK,[]);
@@ -418,6 +419,16 @@ function mkDoc(kind,id){
       {t:'p',v:'The original cheque above has been returned to the tenant and will not be deposited.'},
       {t:'sig',p:[['Returned by',c.signatory],['Received back by Tenant',x.t.name||'']]}],
       msg:`Dear ${x.t.name||'Tenant'},\n\n↩️ *CHEQUE RETURNED TO YOU*\nCheque #${k.chq||'?'} (${fd(k.chqDate)}) – ${AED(k.amount)}\nIt will not be deposited.\n\n${c.brand||c.name}${c.phone?'\n📞 '+c.phone:''}`}}
+  if(kind==='pnl'){const [bid,per]=String(id).split('|');const x0=pnl(bid,per);if(!x0.b.id)return null;const x={c,t:{},b:x0.b,u:{},unit:'',a:null},A=v=>AED(v);
+    return{title:'Building Income & Expense Statement',no:'PL-'+(x0.b.code||bid)+'-'+per.replace('-',''),date:uaeToday(),x,file:(x0.b.code||'BLD')+'_Statement_'+per,blocks:[
+      {t:'kv',r:[['Building',x0.b.name+(x0.b.code?' ('+x0.b.code+')':'')],['Area',x0.b.area||''],['Period',perLab(per)],...(x0.b.owner?[['Building owner',x0.b.owner]]:[]),...(x0.b.leaseFrom?[['Lease',fd(x0.b.leaseFrom)+' – '+fd(x0.b.leaseTo)]]:[])]},
+      {t:'h',v:'Income'},{t:'tb',h:['Item','Amount'],w:[130,50],r:[['Room rent received',A(x0.rent)],...(x0.oth?[['Other income received',A(x0.oth)]]:[])]},{t:'tot',l:'Total income',v:A(x0.income)},
+      {t:'h',v:'Building rent'},{t:'tb',h:['Item','Amount'],w:[130,50],r:x0.lease.length?x0.lease.map(q=>[fd(q.date)+' · '+(q.desc||'Building rent'),A(q.amount)]):[[x0.leaseEst?'Building rent (annual lease ÷ 12'+(per.length===4?' × months':'')+', estimated)':'Building rent – not set',A(x0.leaseEst)]]},{t:'tot',l:'Total building rent',v:A(x0.leaseT)},
+      {t:'h',v:'Expenses'},{t:'tb',h:['Date','Category','Detail','Amount'],w:[26,44,80,34],r:x0.ex.length?x0.ex.map(q=>[fd(q.date),q.cat||'',(q.unit?ulab(by('units',q.unit))+' · ':'')+(q.desc||''),A(q.amount)]):[['','','No expenses','']]},{t:'tot',l:'Total expenses',v:A(x0.exT)},
+      {t:'tot',l:x0.net<0?'NET LOSS':'NET PROFIT',v:A(Math.abs(x0.net))},
+      {t:'kv',r:[['Rent invoiced in period',A(x0.billed)],['Rent still due on these invoices',A(x0.due)],...(x0.dep?[['Security deposits received (held, not income)',A(x0.dep)]]:[]),...(x0.rec?[['To recover from tenants',A(x0.rec)]]:[])]},
+      {t:'sig',p:[['Prepared by',c.signatory]]}],
+      msg:`*${x0.b.name}* – ${perLab(per)}\nIncome: ${A(x0.income)}\nBuilding rent: ${A(x0.leaseT)}\nExpenses: ${A(x0.exT)}\n*Net: ${A(x0.net)}*\nRent still due: ${A(x0.due)}`}}
   if(kind==='emerg'){const k=by('tickets',id);if(!k)return null;const a=S.agreements.find(g=>g.unit===k.unit&&g.closed!=='Yes')||null,x=ctx(a);if(!a){const u=by('units',k.unit)||{};x.u=u;x.b=by('buildings',u.bld)||{};x.unit=ulab(u)}
     const when=k.when||fd(k.date||uaeToday()),cut=k.shut&&k.shut!=='None'?k.shut:'';
     return{title:'Emergency Maintenance Notice',no:'EM-'+(k.id||'').slice(-6).toUpperCase(),date:uaeToday(),x,file:'Emergency_'+(x.unit||'').replace(/\W+/g,'_'),blocks:[
@@ -655,7 +666,7 @@ let kpiK=null;
 const BCOL={HAM1:'#2563eb',NAK2:'#16a34a',RAW2:'#ea580c',RUM2:'#9333ea'},BPAL=['#0891b2','#db2777','#ca8a04','#4f46e5'];
 const bcol=id=>{const b=by('buildings',id);if(!b)return'#64748b';return BCOL[b.code]||BPAL[S.buildings.indexOf(b)%BPAL.length]};
 const bdot=id=>`<i class="bdot" style="background:${bcol(id)}"></i>`;
-const TCOL={home:'#f59e0b',rooms:'#22c55e',overview:'#38bdf8',docs:'#f472b6',units:'#a78bfa',tenants:'#2dd4bf',agreements:'#fb923c',payments:'#4ade80',bills:'#f87171',assets:'#fbbf24',buildings:'#93c5fd'};
+const TCOL={home:'#f59e0b',rooms:'#22c55e',overview:'#38bdf8',accounts:'#34d399',docs:'#f472b6',units:'#a78bfa',tenants:'#2dd4bf',agreements:'#fb923c',payments:'#4ade80',bills:'#f87171',assets:'#fbbf24',buildings:'#93c5fd'};
 const RENT=u=>u.forRent!=='No';
 const actr=a=>a.contract||(a.period==='Yearly'?'Yearly':'Monthly');
 const aexp=a=>(+a.rent||0)*(FX[a.period]||1)+(a.period==='Monthly'?(+a.sewaFee||0)+(+a.wifiFee||0)-(+a.discount||0):0);
@@ -700,6 +711,30 @@ function kpiDetail(k){
   }
   return'';
 }
+
+// ===== Income & expenses: every building is its own account =====
+function pnl(bid,per){const b=by('buildings',bid)||{},inP=d=>!!d&&d.startsWith(per),yr=per.length===4;
+  const pay=S.payments.filter(p=>pbld(p)===bid&&inP(p.date)),sum=(L,k)=>L.reduce((s,x)=>s+(+x[k]||0),0);
+  const rent=sum(pay.filter(p=>(p.pkind||'Rent')==='Rent'),'paid'),dep=sum(pay.filter(p=>p.pkind==='Security deposit'),'paid'),oth=sum(pay.filter(p=>p.pkind&&!['Rent','Security deposit'].includes(p.pkind)),'paid');
+  const inv=S.invoices.filter(i=>{const a=by('agreements',i.agr);return a&&abld(a)===bid&&inP(i.dueDate)}),billed=sum(inv,'amount'),due=inv.reduce((s,i)=>s+Math.max(0,IS[i.id]?.bal||0),0);
+  const bl=S.bills.filter(x=>x.bld===bid&&inP(x.date)&&x.paidBy!=='Tenant').sort((x,y)=>(x.date||'').localeCompare(y.date||'')),rec=sum(S.bills.filter(x=>x.bld===bid&&inP(x.date)),'recover');
+  const lease=bl.filter(x=>x.cat==='Building rent (lease)'),ex=bl.filter(x=>x.cat!=='Building rent (lease)'),leasePaid=sum(lease,'amount');
+  const today=uaeToday(),mths=yr?(per===today.slice(0,4)?+today.slice(5,7):12):1,leaseEst=leasePaid?0:(+b.leaseCost||0)/12*mths;
+  const cats={};ex.forEach(x=>{const k=x.cat||'Other';cats[k]=(cats[k]||0)+(+x.amount||0)});const exT=sum(ex,'amount'),leaseT=leasePaid||leaseEst;
+  return{b,per,rent,dep,oth,billed,due,bl,ex,cats,exT,lease,leasePaid,leaseEst,leaseT,rec,income:rent+oth,net:rent+oth-exT-leaseT}}
+const perLab=p=>p.length===4?'Year '+p:new Date(p+'-01T00:00:00').toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+function accountsView(){const per=pmode==='y'?month.slice(0,4):month,bs=[...S.buildings].filter(b=>inB(b.id)).sort((a,b)=>(a.code||'').localeCompare(b.code||''));
+  const P=bs.map(b=>pnl(b.id,per)),T0=k=>P.reduce((s,x)=>s+x[k],0);
+  let h=`<div class="bar"><button class="btn ${pmode==='m'?'':'ghost'} mini" data-pmode="m">This month</button><button class="btn ${pmode==='y'?'':'ghost'} mini" data-pmode="y">Whole year ${month.slice(0,4)}</button><span class="sub">${esc(perLab(per))} · change month at the top</span></div>`;
+  if(P.length>1)h+=`<div class="card"><h2>All buildings · ${esc(perLab(per))}</h2><table class="stack"><thead><tr><th>Building</th><th class="n">Rent received</th><th class="n">Building rent</th><th class="n">Expenses</th><th class="n">Net profit</th><th class="n">Rent still due</th></tr></thead><tbody>${P.map(x=>`<tr data-b="${x.b.id}" class="brow" style="--bc:${bcol(x.b.id)}"><td>${bdot(x.b.id)}<b>${esc(x.b.name)}</b></td><td class="n">${fmt(x.income)}</td><td class="n">${fmt(x.leaseT)}</td><td class="n">${fmt(x.exT)}</td><td class="n"><b style="color:${x.net<0?'var(--bad)':'var(--ok)'}">${fmt(x.net)}</b></td><td class="n">${fmt(x.due)}</td></tr>`).join('')}<tr><td><b>Total</b></td><td class="n"><b>${fmt(T0('income'))}</b></td><td class="n"><b>${fmt(T0('leaseT'))}</b></td><td class="n"><b>${fmt(T0('exT'))}</b></td><td class="n"><b>${fmt(T0('net'))}</b></td><td class="n"><b>${fmt(T0('due'))}</b></td></tr></tbody></table></div>`;
+  h+=P.map(x=>{const R=(k,v,c='')=>`<tr class="${c}"><th>${k}</th><td class="n">${v}</td></tr>`;return`<div class="card" style="border-top:4px solid ${bcol(x.b.id)}"><h2>${bdot(x.b.id)}${esc(x.b.name)} <span class="sub">${esc(perLab(per))}</span></h2>
+   <table class="kvt"><tbody>${R('<b>INCOME</b>','')}${R('Room rent received','AED '+fmt(x.rent))}${x.oth?R('Other income received','AED '+fmt(x.oth)):''}${R('<b>Total income</b>','<b>AED '+fmt(x.income)+'</b>')}
+   ${R('<b>BUILDING RENT</b>','')}${R(x.leasePaid?'Building rent paid to owner':'Building rent (from lease, estimated)',x.leaseT?'AED '+fmt(x.leaseT):'<span class="sub">not set – add in Buildings or as a bill</span>')}
+   ${R('<b>EXPENSES</b>','')}${Object.entries(x.cats).sort((a,b)=>b[1]-a[1]).map(([k,v])=>R(esc(k),'AED '+fmt(v))).join('')||R('<span class="sub">No expenses</span>','—')}${R('<b>Total expenses</b>','<b>AED '+fmt(x.exT)+'</b>')}
+   ${R('<b>NET PROFIT</b>',`<b style="color:${x.net<0?'var(--bad)':'var(--ok)'}">AED ${fmt(x.net)}</b>`)}
+   ${R('<span class="sub">Rent invoiced in period</span>','<span class="sub">AED '+fmt(x.billed)+'</span>')}${R('<span class="sub">Rent still due on these invoices</span>','<span class="sub">AED '+fmt(x.due)+'</span>')}${x.dep?R('<span class="sub">Security deposits received (held, not income)</span>','<span class="sub">AED '+fmt(x.dep)+'</span>'):''}${x.rec?R('<span class="sub">To recover from tenants</span>','<span class="sub">AED '+fmt(x.rec)+'</span>'):''}</tbody></table>
+   <div class="bar" style="margin-top:10px"><button class="btn ghost mini" data-doc="pnl" data-id="${x.b.id}|${per}">📄 Statement PDF</button><button class="btn ghost mini" data-new="bills" data-pre='${esc(JSON.stringify({bld:x.b.id,date:uaeToday(),paidBy:'Owner',status:'Paid'}))}'>+ Expense</button><button class="btn ghost mini" data-new="bills" data-pre='${esc(JSON.stringify({bld:x.b.id,date:uaeToday(),cat:'Building rent (lease)',paidBy:'Owner',status:'Paid'}))}'>+ Building rent paid</button></div></div>`}).join('');
+  return h||'<div class="empty">No buildings.</div>'}
 function overview(){
   if(!S.buildings.length)return`<div class="empty">No buildings yet.<br><button class="btn" data-new="buildings">+ Add building</button></div>`;
   const s=stats(bsel),pc=s.exp?Math.min(100,s.col/s.exp*100):0,oc=s.n?s.occ/s.n*100:0;
@@ -846,9 +881,9 @@ function render(){
   const bs=[...S.buildings].sort((a,b)=>(a.code||'').localeCompare(b.code||''));
   $('#chips').innerHTML=[['all','All buildings'],...bs.map(b=>[b.id,b.name||b.code])].map(([id,n])=>`<button data-bsel="${id}" aria-pressed="${bsel===id}" style="--bc:${id==='all'?'#ffffff':bcol(id)}">${id==='all'?'':bdot(id)}${esc(n)}</button>`).join('');
   $('#tabs').innerHTML=TABS.map(([k,n])=>`<button role="tab" data-tab="${k}" aria-selected="${tab===k}" style="--tc:${TCOL[k]||'#fff'}">${n}</button>`).join('');
-  $('#q').hidden=tab==='overview'||tab==='home';$('#month').hidden=!['overview','rooms','payments','bills','docs'].includes(tab);
-  $('#add').textContent='+ '+(tab==='overview'||tab==='home'?'Rent payment':tab==='rooms'?'Complaint / maintenance':tab==='docs'?'Invoice':SCH[tab].t);
-  $('#main').innerHTML=tab==='home'?todayView():tab==='overview'?overview():tab==='rooms'?roomsView():LIST[tab]();
+  $('#q').hidden=tab==='overview'||tab==='home';$('#month').hidden=!['overview','rooms','payments','bills','docs','accounts'].includes(tab);
+  $('#add').textContent='+ '+(tab==='overview'||tab==='home'?'Rent payment':tab==='rooms'?'Complaint / maintenance':tab==='docs'?'Invoice':tab==='accounts'?'Bill / expense':SCH[tab].t);
+  $('#main').innerHTML=tab==='home'?todayView():tab==='overview'?overview():tab==='rooms'?roomsView():tab==='accounts'?accountsView():LIST[tab]();
 }
 function opts(t,v){
   const o=(val,lab)=>`<option value="${esc(val)}"${val===v?' selected':''}>${esc(lab)}</option>`;
@@ -915,6 +950,7 @@ document.addEventListener('click',e=>{
   if(g('a.wa')||(g('a.btn')&&g('[data-doc]')))return;
   if(el=g('#dl')){download()}
   else if(g('#shr')){sharePDF()}
+  else if(el=g('[data-pmode]')){pmode=el.dataset.pmode;render()}
   else if(g('#edt')){openEditor()}
   else if(g('#edok')){applyEditor()}
   else if(g('#edcx')){showDoc()}
@@ -933,7 +969,7 @@ document.addEventListener('click',e=>{
   else if(el=g('[data-b]')){bsel=el.dataset.b;render()}
   else if((el=g('[data-open]'))&&!g('#modal')){openForm(el.dataset.open,el.dataset.id)}
   else if(el=g('[data-new]')){openForm(el.dataset.new,null,el.dataset.pre?JSON.parse(el.dataset.pre):null)}
-  else if(g('#add')){openForm(tab==='overview'||tab==='home'?'payments':tab==='rooms'?'tickets':tab==='docs'?'invoices':tab)}
+  else if(g('#add')){openForm(tab==='overview'||tab==='home'?'payments':tab==='rooms'?'tickets':tab==='docs'?'invoices':tab==='accounts'?'bills':tab)}
   else if(g('#cancel')||e.target===$('#ov'))close();
   else if(el=g('#del')){if(el.dataset.sure){const {c,id}=cur;write({op:'del',c,id},'Deleted')}else{el.dataset.sure=1;el.textContent='Tap again to delete'}}
 });
