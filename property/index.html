@@ -131,7 +131,7 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none}
 <body>
 <header class="band">
   <div class="top">
-    <div><h1>MRC Properties</h1><small>Flats, tenants, agreements, rent &amp; bills — Ajman · <span id="appv">v14 · 22 Nov 2026</span></small></div>
+    <div><h1>MRC Properties</h1><small>Flats, tenants, agreements, rent &amp; bills — Ajman · <span id="appv">v15 · 22 Nov 2026</span></small></div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><div class="conn" id="conn"><i></i><span>Connecting…</span></div><button class="btn ghost" id="logout" style="color:#fff;border-color:#3b4f86;min-height:36px" hidden>Sign out</button></div>
   </div>
   <nav class="chips" id="chips" aria-label="Building"></nav>
@@ -248,6 +248,7 @@ function invState(){
   return m;
 }
 const ainv=a=>S.invoices.filter(i=>i.agr===a.id);
+const tRows=(x,lbl)=>[[lbl||'To',x.t.name||''],['Tenant ID',x.t.tid||''],['Mobile',x.t.mobile||''],['Emirates ID',x.t.eid?x.t.eid+(x.t.eidExp?' (exp '+fd(x.t.eidExp)+')':''):''],['Nationality',x.t.nat||'']].filter((r,n)=>n===0||r[1]);
 const invLines=i=>{const L=[['Rent',+i.rent||0],['SEWA / Sewerage',+i.sewa||0],['Wi-Fi',+i.wifi||0],['Electricity & water',+i.ew||0],['Discount',-(+i.disc||0)]].filter(r=>r[1]);return L.length?L:[[i.kind||'Charges',+i.amount||0]]};
 const chargesTb=list=>list.length?{t:'tb',h:['Charges','Amount'],w:[132,50],r:list.flatMap(i=>invLines(i).map(([l,v])=>[(list.length>1?i.ino+' · ':'')+l,AED(v)]))}:null;
 const abal=a=>ainv(a).reduce((s,i)=>s+(+i.amount||0),0)-S.payments.filter(p=>p.agr===a.id&&(p.pkind||'Rent')==='Rent').reduce((s,p)=>s+(+p.paid||0),0);
@@ -321,7 +322,7 @@ function mkDoc(kind,id){
       {t:'p',v:`The Tenant has vacated and handed over vacant possession of the unit with all keys. ${net>=0?'Upon payment of the refund above':'Upon receipt of the amount payable above'}, both parties confirm full and final settlement and have no further claims against each other in respect of this tenancy, except for any utility bills issued later for the period of occupation. The Tenant shall cancel any utility accounts and the Tasdeeq registration in their name.`},sigs(x)],
       msg:`Dear ${x.t.name||'Tenant'},\n\n*Final Settlement – ${x.unit}${x.b.name?' · '+x.b.name:''}*\n${net>=0?'Refund to you':'Amount payable by you'}: *${AED(Math.abs(net))}*\n\nDetails are in the attached statement.\n\nThank you.\n\n${c.brand||c.name}${c.phone?'\n📞 '+c.phone:''}`}}
     if(kind==='paid'||kind==='unpaid'||kind==='vnotice'||kind==='fine'){const all=ainv(a).filter(i=>IS[i.id]).sort((p,q)=>(q.dueDate||'').localeCompare(p.dueDate||''));
-      const head0=[{t:'kv',r:[['To',x.t.name||''],['Mobile',x.t.mobile||''],['Unit',x.unit+' · '+(x.b.name||'')],['Agreement',a.no]]}];const today=uaeToday();
+      const head0=[{t:'kv',r:[...tRows(x),['Unit',x.unit+' · '+(x.b.name||'')],['Agreement',a.no]]}];const today=uaeToday();
       if(kind==='fine'){const fl=all.filter(i=>IS[i.id].fee>0).sort((p,q)=>(p.dueDate||'').localeCompare(q.dueDate||'')),gross=fl.reduce((s,i)=>s+IS[i.id].fee,0),billed=all.filter(i=>i.kind==='Late fee').reduce((s,i)=>s+(+i.amount||0),0),net=afee(a),g=+c.grace||0;
         return{title:'Late Payment Fine Notice',no:'FN-'+a.no+'-'+today.replace(/-/g,''),date:today,x,file:a.no+'_Fine',blocks:[...head0,
         {t:'p',v:fl.length?`As per Clause 5 of your tenancy agreement, rent paid more than ${g} days after the due date attracts a late payment fine. Fines on this tenancy:`:'No late payment fine applies to this tenancy as of '+fd(today)+'.'},
@@ -356,7 +357,7 @@ function mkDoc(kind,id){
     const op=kind==='due'?ainv(a).filter(i=>IS[i.id]&&IS[i.id].bal>0.005).sort((x,y)=>(x.dueDate||'').localeCompare(y.dueDate||'')):aopen(a),tot=op.reduce((s,i)=>s+IS[i.id].bal,0),fee=afee(a),mx=op.reduce((m,i)=>Math.max(m,IS[i.id].od),0);
     const _dl=o=>o>0?o+' days late':o===0?'Due today':'Due in '+(-o)+' day'+(o<-1?'s':''),allFuture=op.length&&op.every(i=>IS[i.id].od<0);
     const tb=op.length?{t:'tb',h:['Invoice','Period','Due date','Status','Balance'],w:[38,52,30,30,30],r:op.map(i=>[i.ino,i.from?fd(i.from)+' – '+fd(i.to):'',fd(i.dueDate),_dl(IS[i.id].od),AED(IS[i.id].bal)])}:{t:'p',v:'No unpaid rent is recorded on this tenancy as of '+fd(uaeToday())+'.'};
-    const head=[{t:'kv',r:[['To',x.t.name||''],['Mobile',x.t.mobile||''],['Unit',x.unit+' · '+(x.b.name||'')],['Agreement',a.no]]}];
+    const head=[{t:'kv',r:[...tRows(x),['Unit',x.unit+' · '+(x.b.name||'')],['Agreement',a.no]]}];
     if(kind==='due')return{title:'Rent Due Notice',no:'DN-'+a.no+'-'+uaeToday().replace(/-/g,''),date:uaeToday(),x,file:a.no+'_DueNotice',blocks:[...head,
       {t:'p',v:allFuture?`This is a friendly reminder that rent of ${AED(tot)} falls due on ${fd(op[0].dueDate)}:`:`This is a reminder that the following amount${op.length>1?'s are':' is'} due under your tenancy agreement:`},tb,...(op.length?[chargesTb(op)]:[]),{t:'tot',l:allFuture?'Total rent due':'Total rent outstanding',v:AED(tot)},
       ...(fee?[{t:'tot',l:'Late fines accrued (Clause 5)',v:AED(fee)},{t:'tot',l:'Total payable',v:AED(tot+fee)}]:[]),
@@ -373,7 +374,7 @@ function mkDoc(kind,id){
     const _note=(st.bal<=0.005?`Paid in full. Total in words: ${words(i.amount)}. Thank you.`:(st.got>0?`Balance due in words: ${words(st.bal)}. `:`Amount in words: ${words(i.amount)}. `)+(_late>0?`OVERDUE since ${fd(i.dueDate)} (${_late} day${_late>1?'s':''} late). Please pay AED ${fmt2(st.bal)} immediately. `+(_late>=_g?'A late fine applies as per your tenancy agreement.':`A late fine applies from ${fd(_fineFrom)} as per your tenancy agreement.`):`Please pay on or before ${fd(i.dueDate)}. A late fine applies after ${_g} days as per your tenancy agreement.`))+(c.bank?' Bank: '+c.bank:'');
     const items=((+i.rent||0)+(+i.sewa||0)+(+i.wifi||0)+(+i.ew||0)>0?[['Rent – '+x.unit,+i.rent],['SEWA / Sewerage',+i.sewa],['Wi-Fi',+i.wifi],['Electricity & Water',+i.ew],['Discount',-(+i.disc||0)]].filter(r=>+r[1]):[[(i.kind==='Rent'||!i.kind?'Rent – '+x.unit:i.kind)+(i.notes?' – '+i.notes:''),+i.amount]]).map(r=>{const amt=+r[1];if(amt<=0||!(st.got>0))return[r[0],fmt2(amt)];const pd=Math.min(_rem,amt);_rem-=pd;return[r[0]+(pd>=amt-0.005?' (Paid)':pd>0?' (Part paid – '+fmt2(amt-pd)+' due)':' (Unpaid)'),fmt2(amt)]});
     return{title:c.trn?'TAX INVOICE':'RENT INVOICE',sub:'PROFESSIONAL PAYMENT STATEMENT',no:i.ino,date:i.issued||uaeToday(),x,file:i.ino,
-      inv:{info:[['Invoice No.',i.ino],['Invoice Date',fd(i.issued||uaeToday())],['Billing Period',i.from?fd(i.from)+' – '+fd(i.to):''],['Due Date',fd(i.dueDate)],['Tenant Name',x.t.name||''],['Unit',x.unit+(x.b.name?' · '+x.b.name:'')],...(x.u.elecAc?[['Etihad WE Account',x.u.elecAc]]:[]),...(x.u.sewAc?[['Sewerage Account',x.u.sewAc]]:[])],items,total:fmt2(i.amount),paid:fmt2(st.got),bal:fmt2(Math.max(0,st.bal)),prev:prev?fmt2(prev):'',fine:fine?fmt2(fine):'',grand:(prev||fine)?fmt2(grand):'',
+      inv:{info:[['Invoice No.',i.ino],['Invoice Date',fd(i.issued||uaeToday())],['Billing Period',i.from?fd(i.from)+' – '+fd(i.to):''],['Due Date',fd(i.dueDate)],['Tenant Name',x.t.name||''],...(x.t.mobile?[['Mobile',x.t.mobile]]:[]),...(x.t.eid?[['Emirates ID',x.t.eid]]:[]),['Unit',x.unit+(x.b.name?' · '+x.b.name:'')],...(x.u.elecAc?[['Etihad WE Account',x.u.elecAc]]:[]),...(x.u.sewAc?[['Sewerage Account',x.u.sewAc]]:[])],items,total:fmt2(i.amount),paid:fmt2(st.got),bal:fmt2(Math.max(0,st.bal)),prev:prev?fmt2(prev):'',fine:fine?fmt2(fine):'',grand:(prev||fine)?fmt2(grand):'',
         note:_note},
       blocks:[
       {t:'kv',r:[['Bill to',x.t.name||''],['Tenant ID / Mobile',(x.t.tid||'')+' · '+(x.t.mobile||'')],['Unit',x.unit+' · '+(x.b.name||'')],['Agreement',a?.no||'']]},
@@ -384,7 +385,7 @@ function mkDoc(kind,id){
   if(kind==='chqrec'||kind==='bounce'){const k=by('cheques',id);if(!k)return null;const a=by('agreements',k.agr),x=ctx(a);
     if(kind==='chqrec'){const L=S.cheques.filter(q=>q.agr===k.agr&&!['Bounced','Replaced'].includes(q.status)).sort((p,q)=>(p.chqDate||'').localeCompare(q.chqDate||'')),tot=L.reduce((s,q)=>s+(+q.amount||0),0);
       return{title:'Cheque Received Receipt',no:'CR-'+(a?.no||'')+'-'+uaeToday().replace(/-/g,''),date:uaeToday(),x,file:(a?.no||'Cheques')+'_ChequesReceived',blocks:[
-      {t:'kv',r:[['Received from',x.t.name||''],['Unit',x.unit+(x.b.name?' · '+x.b.name:'')],['Agreement',a?.no||'']]},
+      {t:'kv',r:[...tRows(x,'Received from'),['Unit',x.unit+(x.b.name?' · '+x.b.name:'')],['Agreement',a?.no||'']]},
       {t:'p',v:`Received the following cheque${L.length>1?'s':''} from the tenant:`},
       {t:'tb',h:['#','Cheque no','Bank','Cheque date','For','Amount'],w:[8,30,34,28,36,34],r:L.map((q,n)=>[n+1,q.chq||'—',q.bank||'—',fd(q.chqDate),q.purpose||'Rent',AED(q.amount)])},
       {t:'tot',l:'Total of cheques',v:AED(tot)},{t:'p',v:'Amount in words: '+words(tot)},
@@ -416,7 +417,7 @@ function mkDoc(kind,id){
     const _ib=i&&IS[i.id]?Math.max(0,IS[i.id].bal):null,_isRent=(p.pkind||'Rent')==='Rent',_part=_isRent&&((_ib!=null?_ib:bal)>0.005),_left=_ib!=null?_ib:bal;
     const _kind=p.method==='Cash'?'Cash Receipt Voucher':p.method==='Cheque'?'Cheque Receipt Voucher':'Payment Receipt Voucher';
     return{title:_kind+(_isRent?(_part?' – Partial Payment':' – Rent Paid'):''),no:p.rno,date:p.date,x,file:p.rno+(_part?'_Partial':''),blocks:[
-      {t:'kv',r:[['Received from',x.t.name||''],['Unit',x.unit+' · '+(x.b.name||'')],['Agreement',a?.no||''],['Payment for',(p.pkind&&p.pkind!=='Rent')?p.pkind:(i?'Rent – '+i.ino+(i.from?' ('+fd(i.from)+' – '+fd(i.to)+')':''):'Rent – on account')],['Payment method',(p.method||'')+(p.chq?' · Cheque '+p.chq:'')+(p.bank?' · '+p.bank:'')+(p.chqDate?' · dated '+fd(p.chqDate):'')]]},
+      {t:'kv',r:[...tRows(x,'Received from'),['Unit',x.unit+' · '+(x.b.name||'')],['Agreement',a?.no||''],['Payment for',(p.pkind&&p.pkind!=='Rent')?p.pkind:(i?'Rent – '+i.ino+(i.from?' ('+fd(i.from)+' – '+fd(i.to)+')':''):'Rent – on account')],['Payment method',(p.method||'')+(p.chq?' · Cheque '+p.chq:'')+(p.bank?' · '+p.bank:'')+(p.chqDate?' · dated '+fd(p.chqDate):'')]]},
       {t:'tot',l:'Amount received',v:AED(p.paid)},{t:'p',v:'Amount in words: '+words(p.paid)},...(_isRent?[{t:'p',v:_part?`PART PAYMENT – AED ${fmt2(_left)} is still due${i?' on invoice '+i.ino:''}${i&&i.dueDate?' (due '+fd(i.dueDate)+')':''}.`:(i?`RENT PAID IN FULL for ${i.from?fd(i.from)+' – '+fd(i.to):'invoice '+i.ino}.`:'Payment received on account.')}]:[]),...((p.pkind||'Rent')==='Rent'?[{t:'tot',l:'Balance outstanding after this payment',v:AED(bal)}]:[{t:'p',v:p.pkind==='Security deposit'?'This security deposit is refundable at the end of the tenancy after deducting any unpaid rent, utility bills, damages and charges, as per the tenancy agreement.':''}]),
       {t:'p',v:p.method==='Cheque'?'Cheque payments are subject to realisation. A returned cheque cancels this receipt and attracts the bounced-cheque charge.':'Thank you for your payment.'},
       {t:'sig',p:[['Received by',p.by||c.signatory],['Paid by (Tenant)',x.t.name||'']]}],
