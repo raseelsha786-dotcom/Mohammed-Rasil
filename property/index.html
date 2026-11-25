@@ -185,7 +185,7 @@ body:has(#ov.on) #add{display:none}#add{position:fixed;right:16px;bottom:calc(76
 <body>
 <header class="band">
   <div class="top">
-    <div class="brand"><h1>MRC Properties</h1><small><span id="appv">v37 · 26 Nov 2026</span> · <button id="upd" type="button" class="hlink">⟳ Update</button></small></div>
+    <div class="brand"><h1>MRC Properties</h1><small><span id="appv">v38 · 26 Nov 2026</span> · <button id="upd" type="button" class="hlink">⟳ Update</button></small></div>
     <div class="hr"><div class="conn" id="conn"><i></i><span>Connecting…</span></div><button class="hlink" id="logout" hidden>Sign out</button></div>
   </div>
   <nav class="chips" id="chips" aria-label="Building"></nav>
@@ -229,8 +229,8 @@ const SCH={
  assets:{t:'Item & warranty',f:[['unit','Unit','unit'],['item','Item (e.g. Gas stove)'],['brand','Brand / model'],['qty','Quantity','num'],['price','Price each (AED, incl. VAT)','num'],['bought','Bought on','date'],['shop','Shop'],['rno','Receipt / invoice no'],['warrUntil','Warranty until','date'],['status','Status','sel',['In unit','Under repair','Replaced','Removed']],['photo','Warranty card / receipt photo','photo'],['notes','Notes','area']]},
  bills:{t:'Bill / expense',f:[['date','Date / bill month','date'],['bld','Building','bld'],['unit','Unit (blank = whole building)','unit'],['cat','Category','sel',CATS],['desc','Description / work done'],['acc','Account / bill no'],['amount','Amount (AED)','num'],['paidBy','Paid by','sel',['Owner','Tenant']],['acct','Paid from (account)','acct'],['status','Status','sel',BST],['_','Paid to (for payment voucher)','h'],['payee','Paid to – name / company'],['payeeMob','Paid to – mobile (WhatsApp)'],['method','Payment method','sel',METH],['ref','Cheque / transfer ref'],['vno','Their invoice / bill no'],['photo','Photo of their invoice / receipt','photo'],['recover','Recover from tenant (AED)','num'],['notes','Notes','area']]}
 };
-const TABS=[['home','Home'],['important','Important today'],['maint','Maintenance'],['rooms','Rooms'],['overview','Overview'],['accounts','💼 Accounts'],['docs','Vouchers'],['units','Units'],['tenants','Tenants'],['agreements','Agreements'],['payments','Rent'],['bills','Bills & expenses'],['assets','Items & warranty'],['buildings','Buildings']];
-const S={buildings:[],units:[],tenants:[],agreements:[],payments:[],bills:[],invoices:[],settings:[],cheques:[],tickets:[],assets:[],accounts:[],moves:[]};
+const TABS=[['home','Home'],['important','Important today'],['maint','Maintenance'],['rooms','Rooms'],['overview','Overview'],['accounts','💼 Accounts'],['docs','Vouchers'],['units','Units'],['tenants','Tenants'],['agreements','Agreements'],['payments','Rent'],['bills','Bills & expenses'],['assets','Items & warranty'],['buildings','Buildings'],['trash','🗑 Recycle bin']];
+const S={buildings:[],units:[],tenants:[],agreements:[],payments:[],bills:[],invoices:[],settings:[],cheques:[],tickets:[],assets:[],accounts:[],moves:[],trash:[]};
 const IMGC={};
 const iso=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
 // Property records use the UAE calendar. Keep date-only values compatible with D and iso.
@@ -719,6 +719,8 @@ function homeView(){
 function corrCard(bid){const b=by('buildings',bid)||{},L=S.bills.filter(x=>x.bld===bid&&isCorr(x)).sort((p,q)=>(q.date||'').localeCompare(p.date||'')),mo=uaeToday().slice(0,7),cur=L.filter(x=>(x.date||'').startsWith(mo)),un=L.filter(x=>x.status!=='Paid'),unT=un.reduce((s,x)=>s+(+x.amount||0),0);
   const st=cur.length?(cur.every(x=>x.status==='Paid')?tag('This month paid','ok'):tag('This month unpaid · AED '+fmt(cur.filter(x=>x.status!=='Paid').reduce((s,x)=>s+(+x.amount||0),0)),'bad')):tag('This month not added yet','warn');
   return`<div class="card"><h3>💡 Corridor electricity</h3><p class="sub">Etihad WE a/c <b>${esc(b.corridorEw||'— add in Building details')}</b> · reminder every month from day ${+(co().corrDay||15)}</p><div style="margin:6px 0">${st}${unT?' '+tag('Total unpaid AED '+fmt(unT),'bad'):''}</div>${L.length?`<table class="kvt"><tbody>${L.slice(0,6).map(x=>`<tr data-open="bills" data-id="${x.id}"><th>${fd(x.date)}<div class="sub">${esc(x.desc||'')}</div></th><td class="n">AED ${fmt(x.amount)} ${x.status==='Paid'?tag('Paid','ok'):tag('Unpaid','bad')}</td></tr>`).join('')}</tbody></table>`:'<p class="sub">No corridor bills yet.</p>'}<div class="acts"><button class="btn mini" data-new="bills" data-pre='${esc(JSON.stringify({bld:bid,date:uaeToday(),cat:'Corridor electricity (Etihad WE)',desc:'Corridor electricity – '+(b.name||''),acc:b.corridorEw||'',paidBy:'Owner',status:'Unpaid'}))}'>+ Corridor bill</button></div></div>`}
+function trashView(){const L=[...S.trash].sort((a,b)=>(b.at||'').localeCompare(a.at||''));
+  return`<div class="card"><h2>🗑 Recycle bin <span class="sub">(${L.length})</span></h2><p class="sub">Everything you delete comes here first. Tap <b>Restore</b> to bring it back.</p>${L.length?`<table class="stack"><tbody>${L.map(t=>`<tr><td><b>${esc(TRL[t.c]||t.c)}</b> · ${esc(t.lab||'')}<div class="sub">${t.where?esc(t.where)+' · ':''}deleted ${fd((t.at||'').slice(0,10))} ${esc((t.at||'').slice(11,16))}</div></td><td class="n"><button class="btn mini" data-restore="${t.id}">↩ Restore</button> <button class="btn ghost mini" data-purge="${t.id}">Delete forever</button></td></tr>`).join('')}</tbody></table>`:'<p class="sub">Recycle bin is empty.</p>'}${L.length?`<div class="acts"><button class="btn ghost mini" data-purge="__all">Empty recycle bin</button></div>`:''}</div>`}
 function hubView(bid){const b=by('buildings',bid)||{},x=stats(bid),c=bcol(bid);
   const n=(f)=>f.length,ag=S.agreements.filter(a=>abld(a)===bid&&live(a)),tk=S.tickets.filter(k=>k.status!=='Done'&&by('units',k.unit)?.bld===bid);
   const pend=S.agreements.filter(a=>abld(a)===bid).filter(a=>aopen(a).length).length,it=S.assets.filter(q=>by('units',q.unit)?.bld===bid).length;
@@ -1033,8 +1035,8 @@ function render(){
   const MAIN=[['home','🏠','Home'],['rooms','🚪','Rooms'],['accounts','💼','Accounts'],['docs','🧾','Papers']],isMore=!MAIN.some(m=>m[0]===tab);
   $('#tabs').innerHTML=MAIN.map(([k,i,n])=>`<button role="tab" data-tab="${k}" aria-selected="${tab===k}"><i>${i}</i><span>${n}</span></button>`).join('')+`<button role="tab" data-more="1" aria-selected="${isMore}"><i>☰</i><span>${isMore?esc((TABS.find(x=>x[0]===tab)||[,'More'])[1]):'More'}</span></button>`;
   $('#q').hidden=['overview','home','important'].includes(tab);$('#chips').style.display=tab==='home'&&bsel==='all'?'none':'';$('#add').style.display=tab==='home'&&bsel==='all'?'none':'';$('#month').hidden=!['overview','rooms','payments','bills','docs','accounts'].includes(tab);
-  $('#add').textContent='+ '+(['overview','home','important'].includes(tab)?'Rent payment':tab==='rooms'||tab==='maint'?'Complaint / maintenance':tab==='docs'?'Invoice':tab==='accounts'?'Bill / expense':SCH[tab].t);
-  $('#main').innerHTML=tab==='home'?homeView():tab==='important'?todayView():tab==='maint'?maintView():tab==='overview'?overview():tab==='rooms'?roomsView():tab==='accounts'?accountsView():LIST[tab]();
+  $('#add').textContent='+ '+(['overview','home','important'].includes(tab)?'Rent payment':tab==='rooms'||tab==='maint'?'Complaint / maintenance':tab==='docs'?'Invoice':tab==='accounts'?'Bill / expense':SCH[tab]?SCH[tab].t:'Rent payment');
+  $('#main').innerHTML=tab==='home'?homeView():tab==='important'?todayView():tab==='maint'?maintView():tab==='overview'?overview():tab==='rooms'?roomsView():tab==='accounts'?accountsView():tab==='trash'?trashView():LIST[tab]();
 }
 function opts(t,v){
   const o=(val,lab)=>`<option value="${esc(val)}"${val===v?' selected':''}>${esc(lab)}</option>`;
@@ -1082,8 +1084,13 @@ function payInfo(){
 }
 let roomOpen=null,inRoom=false;
 const close=()=>{const back=roomOpen&&!inRoom;$('#ov').classList.remove('on','doc');cur=null;curDoc=null;if(back){openRoom(roomOpen);return}roomOpen=null;inRoom=false};
+const TRL={invoices:'Invoice',payments:'Receipt',bills:'Bill / expense',tenants:'Tenant',agreements:'Agreement',units:'Unit',tickets:'Complaint',assets:'Item',cheques:'Cheque',buildings:'Building',accounts:'Money account',moves:'Transfer'};
+const trLab=(c,d)=>c==='invoices'?(d.ino||'')+' · AED '+fmt(d.amount):c==='payments'?(d.rno||'')+' · AED '+fmt(d.paid):c==='bills'?(d.cat||'')+(d.desc?' · '+d.desc:'')+' · AED '+fmt(d.amount):c==='tenants'?(d.name||''):c==='agreements'?(d.no||'')+' · '+tname(d.tenant):c==='units'?ulab(d):c==='tickets'?(d.desc||''):c==='assets'?(d.name||d.item||''):c==='cheques'?('#'+(d.chq||'')+' · AED '+fmt(d.amount)):(d.name||d.no||'');
 function write(o,msg){
   if(!canWrite){toast('You have view-only access');return}
+  if(o.op==='del'&&o.c!=='trash'&&!o.noTrash){const d=by(o.c,o.id);if(d){const {id:_,...rest}=d,u=d.unit?by('units',d.unit):d.agr?by('units',by('agreements',d.agr)?.unit):null;
+    const tr={op:'set',c:'trash',id:'tr-'+Date.now().toString(36)+'-'+String(o.id).slice(-12),data:{c:o.c,oid:o.id,data:rest,at:new Date().toISOString(),lab:trLab(o.c,{id:o.id,...rest}),where:u?ulab(u):(d.bld?bcode(d.bld):'')}};applyOp(tr);outbox.push(tr)}}
+  const {noTrash:_n,...op}=o;o=op;
   applyOp(o);outbox.push(o);save();close();render();
   toast(online&&navigator.onLine!==false?msg:msg+' offline — will sync');flush();
 }
@@ -1120,8 +1127,10 @@ document.addEventListener('click',e=>{
   else if(el=g('[data-sign]')){const a=by('agreements',el.dataset.sign);if(a){const {id,...d}=a;write({op:'set',c:'agreements',id,data:{...d,signed:'Signed',signedDate:d.signedDate||uaeToday()}},'Marked as signed')}}
   else if(el=g('[data-charge]')){const a=by('agreements',el.dataset.charge);if(a){const amt=afee(a),n=S.invoices.filter(i=>i.agr===a.id&&i.kind==='Late fee').length+1;write({op:'set',c:'invoices',id:'fee-'+a.id+'-'+n,data:{ino:'INV-'+String(a.no).replace(/[^A-Za-z0-9]/g,'')+'-F'+n,kind:'Late fee',agr:a.id,dueDate:uaeToday(),issued:uaeToday(),amount:amt,notes:'Late payment fine as per agreement clause 5'}},'Fine invoice created')}}
   else if(el=g('[data-kpi]')){const k=el.dataset.kpi;kpiK=kpiK===k?null:k;render();if(kpiK)setTimeout(()=>$('.kd')?.scrollIntoView({behavior:'smooth',block:'start'}),50)}
+  else if(el=g('[data-restore]')){const t=by('trash',el.dataset.restore);if(!t)return;if(by(t.c,t.oid)){toast('Already exists – not restored');return}write({op:'set',c:t.c,id:t.oid,data:t.data},'Restored '+(TRL[t.c]||'')+' '+(t.lab||''));write({op:'del',c:'trash',id:t.id},'Restored')}
+  else if(el=g('[data-purge]')){const k=el.dataset.purge;if(k==='__all'){if(confirm('Delete everything in the recycle bin forever?')){[...S.trash].forEach(t=>write({op:'del',c:'trash',id:t.id},'Recycle bin emptied'))}}else if(confirm('Delete forever? This cannot be undone.'))write({op:'del',c:'trash',id:k},'Deleted forever')}
   else if(el=g('[data-rmdoc]')){const c=el.dataset.rmdoc,id=el.dataset.id,d=by(c,id);if(!d)return;const lab=c==='invoices'?'invoice '+(d.ino||''):'receipt '+(d.rno||'');const linked=c==='invoices'?S.payments.filter(p=>p.inv===id):[];
-    if(confirm('Delete '+lab+' (AED '+fmt(c==='invoices'?d.amount:d.paid)+')?'+(linked.length?'\n\n'+linked.length+' payment(s) are linked to it – they will stay and move to the next open invoice.':'')+'\n\nThis cannot be undone.')){if(c==='invoices'){linked.forEach(p=>{const {id:pid,...rest}=p;write({op:'set',c:'payments',id:pid,data:{...rest,inv:''}},'')})}write({op:'del',c,id},'Deleted '+lab);$('#ov').classList.remove('on','doc');render()}}
+    if(confirm('Delete '+lab+' (AED '+fmt(c==='invoices'?d.amount:d.paid)+')?'+(linked.length?'\n\n'+linked.length+' payment(s) are linked to it – they will stay and move to the next open invoice.':'')+'\n\nIt goes to the 🗑 Recycle bin (More → Recycle bin) – you can restore it.')){if(c==='invoices'){linked.forEach(p=>{const {id:pid,...rest}=p;write({op:'set',c:'payments',id:pid,data:{...rest,inv:''}},'')})}write({op:'del',c,id},'Deleted '+lab);$('#ov').classList.remove('on','doc');render()}}
   else if(el=g('button[data-open]')){openForm(el.dataset.open,el.dataset.id)}
   else if(el=g('[data-room]')){if(el.dataset.room)openRoom(el.dataset.room)}
   else if(el=g('[data-doc]')){openDoc(el.dataset.doc,el.dataset.id)}
@@ -1130,9 +1139,9 @@ document.addEventListener('click',e=>{
   else if(el=g('[data-b]')){bsel=el.dataset.b;render()}
   else if((el=g('[data-open]'))&&!g('#modal')){openForm(el.dataset.open,el.dataset.id)}
   else if(el=g('[data-new]')){openForm(el.dataset.new,null,el.dataset.pre?JSON.parse(el.dataset.pre):null)}
-  else if(g('#add')){openForm(['overview','home','important'].includes(tab)?'payments':tab==='rooms'||tab==='maint'?'tickets':tab==='docs'?'invoices':tab==='accounts'?'bills':tab)}
+  else if(g('#add')){openForm(['overview','home','important'].includes(tab)?'payments':tab==='rooms'||tab==='maint'?'tickets':tab==='docs'?'invoices':tab==='accounts'?'bills':SCH[tab]?tab:'payments')}
   else if(g('#cancel')||e.target===$('#ov'))close();
-  else if(el=g('#del')){if(el.dataset.sure){const {c,id}=cur;write({op:'del',c,id},'Deleted')}else{el.dataset.sure=1;el.textContent='Tap again to delete'}}
+  else if(el=g('#del')){if(el.dataset.sure){const {c,id}=cur;write({op:'del',c,id},'Deleted')}else{el.dataset.sure=1;el.textContent='Tap again – moves to Recycle bin'}}
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&cur)close()});
 document.addEventListener('input',e=>{if(cur?.c==='payments'&&e.target.name==='paid')payInfo()});
