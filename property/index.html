@@ -185,7 +185,7 @@ body:has(#ov.on) #add{display:none}#add{position:fixed;right:16px;bottom:calc(76
 <body>
 <header class="band">
   <div class="top">
-    <div class="brand"><h1>MRC Properties</h1><small><span id="appv">v40 · 26 Nov 2026</span> · <button id="upd" type="button" class="hlink">⟳ Update</button></small></div>
+    <div class="brand"><h1>MRC Properties</h1><small><span id="appv">v41 · 26 Nov 2026</span> · <button id="upd" type="button" class="hlink">⟳ Update</button></small></div>
     <div class="hr"><div class="conn" id="conn"><i></i><span>Connecting…</span></div><button class="hlink" id="logout" hidden>Sign out</button></div>
   </div>
   <nav class="chips" id="chips" aria-label="Building"></nav>
@@ -292,10 +292,13 @@ let IS={};
 function invState(){
   const m={},c=co(),g=+c.grace||0;
   S.agreements.forEach(a=>{
-    const Q=S.payments.filter(p=>p.agr===a.id&&(p.pkind||'Rent')==='Rent').sort((x,y)=>(x.date||'').localeCompare(y.date||'')).map(p=>({d:p.date,v:+p.paid||0}));
-    S.invoices.filter(i=>i.agr===a.id).sort((x,y)=>(x.dueDate||'').localeCompare(y.dueDate||'')).forEach(i=>{
-      const amt=+i.amount||0;let got=0,paidOn=null;
-      while(got<amt&&Q.length){const q=Q[0],t=Math.min(q.v,amt-got);got+=t;q.v-=t;paidOn=q.d;if(q.v<=0)Q.shift()}
+    const IV=S.invoices.filter(i=>i.agr===a.id).sort((x,y)=>(x.dueDate||'').localeCompare(y.dueDate||'')||((x.kind==='Utility')-(y.kind==='Utility'))),G={},PO={};IV.forEach(i=>{G[i.id]=0});
+    const P=S.payments.filter(p=>p.agr===a.id&&(p.pkind||'Rent')==='Rent').sort((x,y)=>(x.date||'').localeCompare(y.date||'')).map(p=>({d:p.date,v:+p.paid||0,inv:p.inv}));
+    P.forEach(q=>{if(q.inv&&q.inv in G){const i=IV.find(z=>z.id===q.inv),t=Math.min(q.v,Math.max(0,(+i.amount||0)-G[i.id]));G[i.id]+=t;q.v-=t;if(t>0)PO[i.id]=q.d}});
+    const Q=P.filter(q=>q.v>0.0001);
+    IV.forEach(i=>{
+      const amt=+i.amount||0;let got=G[i.id],paidOn=PO[i.id]||null;
+      while(got<amt-0.0001&&Q.length){const q=Q[0],t=Math.min(q.v,amt-got);got+=t;q.v-=t;paidOn=q.d;if(q.v<=0.0001)Q.shift()}
       const bal=Math.round((amt-got)*100)/100,od=-(days(i.dueDate)??0);
       let st=bal<=0?'Paid':od>=(+c.warnDays||7)?'Warning':od>0?'Overdue':got>0?'Part paid':'Due';
       const late=bal<=0&&paidOn?Math.round((D(paidOn)-D(i.dueDate))/864e5):od;
@@ -530,13 +533,13 @@ function mkDoc(kind,id){
   if(kind==='receipt'){const p=by('payments',id);if(!p)return null;const a=by('agreements',p.agr),x=ctx(a),i=by('invoices',p.inv),bal=a?Math.max(0,abal(a)):0;
     const _ib=i&&IS[i.id]?Math.max(0,IS[i.id].bal):null,_isRent=(p.pkind||'Rent')==='Rent',_part=_isRent&&((_ib!=null?_ib:bal)>0.005),_left=_ib!=null?_ib:bal;
     const _nx=a?ainv(a).filter(v=>IS[v.id]&&IS[v.id].bal>0.005).sort((u,v)=>(u.dueDate||'').localeCompare(v.dueDate||''))[0]:null;
-    const _kind=p.method==='Cash'?'Cash Receipt Voucher':p.method==='Cheque'?'Cheque Receipt Voucher':'Payment Receipt Voucher';
-    return{title:_kind+(_isRent?(_part?' – Partial Payment':' – Rent Paid'):''),no:p.rno,date:p.date,x,file:p.rno+(_part?'_Partial':''),blocks:[
-      {t:'kv',r:[...tRows(x,'Received from'),['Unit',x.unit+' · '+(x.b.name||'')],['Agreement',a?.no||''],['Payment for',(p.pkind&&p.pkind!=='Rent')?p.pkind:(i?'Rent – '+i.ino+(i.from?' ('+fd(i.from)+' – '+fd(i.to)+')':''):'Rent – on account')],['Payment method',(p.method||'')+(p.chq?' · Cheque '+p.chq:'')+(p.bank?' · '+p.bank:'')+(p.chqDate?' · dated '+fd(p.chqDate):'')]]},
-      {t:'tot',l:'Amount received',v:AED(p.paid)},{t:'p',v:'Amount in words: '+words(p.paid)},...(_isRent?[{t:'p',v:_part?`PART PAYMENT – AED ${fmt2(_left)} is still due${i?' on invoice '+i.ino:''}${i&&i.dueDate?' (due '+fd(i.dueDate)+')':''}.`:(i?`RENT PAID IN FULL for ${i.from?fd(i.from)+' – '+fd(i.to):'invoice '+i.ino}.`:'Payment received on account.')}]:[]),{t:'tot',l:'PENDING AMOUNT (balance due)',v:AED(bal)},...(bal>0.005&&_nx&&!(_isRent&&_part)?[{t:'p',v:`Pending AED ${fmt2(bal)} – next due ${fd(_nx.dueDate)} (invoice ${_nx.ino}).`}]:bal<=0.005?[{t:'p',v:'No pending amount – account fully paid.'}]:[]),...(p.pkind==='Security deposit'?[{t:'p',v:'This security deposit is refundable at the end of the tenancy after deducting any unpaid rent, utility bills, damages and charges, as per the tenancy agreement.'}]:[]),
+    const _ut=!!i&&i.kind==='Utility',_kind=p.method==='Cash'?'Cash Receipt Voucher':p.method==='Cheque'?'Cheque Receipt Voucher':'Payment Receipt Voucher';
+    return{title:_kind+(_isRent?(_part?' – Partial Payment':_ut?' – Electricity & Water Paid':' – Rent Paid'):''),no:p.rno,date:p.date,x,file:p.rno+(_part?'_Partial':''),blocks:[
+      {t:'kv',r:[...tRows(x,'Received from'),['Unit',x.unit+' · '+(x.b.name||'')],['Agreement',a?.no||''],['Payment for',(p.pkind&&p.pkind!=='Rent')?p.pkind:(i?(_ut?'Electricity & water – ':'Rent – ')+i.ino+(i.from?' ('+fd(i.from)+' – '+fd(i.to)+')':''):'Rent – on account')],['Payment method',(p.method||'')+(p.chq?' · Cheque '+p.chq:'')+(p.bank?' · '+p.bank:'')+(p.chqDate?' · dated '+fd(p.chqDate):'')]]},
+      {t:'tot',l:'Amount received',v:AED(p.paid)},{t:'p',v:'Amount in words: '+words(p.paid)},...(_isRent?[{t:'p',v:_part?`PART PAYMENT – AED ${fmt2(_left)} is still due${i?' on invoice '+i.ino:''}${i&&i.dueDate?' (due '+fd(i.dueDate)+')':''}.`:(i?`${_ut?'ELECTRICITY & WATER BILL PAID IN FULL':'RENT PAID IN FULL'} for ${i.from?fd(i.from)+' – '+fd(i.to):'invoice '+i.ino}.`:'Payment received on account.')}]:[]),{t:'tot',l:'PENDING AMOUNT (balance due)',v:AED(bal)},...(bal>0.005&&_nx&&!(_isRent&&_part)?[{t:'p',v:`Pending AED ${fmt2(bal)} – next due ${fd(_nx.dueDate)} (invoice ${_nx.ino}).`}]:bal<=0.005?[{t:'p',v:'No pending amount – account fully paid.'}]:[]),...(p.pkind==='Security deposit'?[{t:'p',v:'This security deposit is refundable at the end of the tenancy after deducting any unpaid rent, utility bills, damages and charges, as per the tenancy agreement.'}]:[]),
       {t:'p',v:p.method==='Cheque'?'Cheque payments are subject to realisation. A returned cheque cancels this receipt and attracts the bounced-cheque charge.':'Thank you for your payment.'},
       {t:'sig',p:[['Received by',p.by||c.signatory],['Paid by (Tenant)',x.t.name||'']]}],
-      msg:`Dear ${x.t.name||'Tenant'},\n\n✅ *${_isRent?(_part?'PART PAYMENT RECEIVED':'RENT PAID IN FULL'):'PAYMENT RECEIVED'}*\n🏠 ${x.unit}${x.b.name?' · '+x.b.name:''}\nReceipt: *${p.rno}*\nFor: ${p.pkind||'Rent'}\nAmount: *${AED(p.paid)}*${p.method?` (${p.method})`:''}\nDate: ${fd(p.date)}\n\n⏳ *Pending amount: ${AED(bal)}*${bal>0.005&&_nx?` (due ${fd(_nx.dueDate)})`:bal<=0.005?' – fully paid ✅':''}\n\nThank you for your payment.\n\n${c.brand||c.name}${c.phone?'\n📞 '+c.phone:''}`}}
+      msg:`Dear ${x.t.name||'Tenant'},\n\n✅ *${_isRent?(_part?'PART PAYMENT RECEIVED':_ut?'ELECTRICITY & WATER PAID':'RENT PAID IN FULL'):'PAYMENT RECEIVED'}*\n🏠 ${x.unit}${x.b.name?' · '+x.b.name:''}\nReceipt: *${p.rno}*\nFor: ${_ut?'Electricity & water'+(i.ino?' ('+i.ino+')':''):p.pkind||'Rent'}\nAmount: *${AED(p.paid)}*${p.method?` (${p.method})`:''}\nDate: ${fd(p.date)}\n\n⏳ *Pending amount: ${AED(bal)}*${bal>0.005&&_nx?` (due ${fd(_nx.dueDate)})`:bal<=0.005?' – fully paid ✅':''}\n\nThank you for your payment.\n\n${c.brand||c.name}${c.phone?'\n📞 '+c.phone:''}`}}
   return null;
 }
 /* ---------- render a document: HTML ---------- */
