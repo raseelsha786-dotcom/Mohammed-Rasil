@@ -83,7 +83,7 @@ td.n,th.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .empty{text-align:center;padding:40px 16px;color:var(--mute)}
 .empty .btn{margin-top:12px}
 .ov{position:fixed;inset:0;background:rgba(5,10,30,.55);display:none;align-items:flex-start;justify-content:center;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:24px 12px calc(40px + env(safe-area-inset-bottom));z-index:60}
-.ov.on{display:flex}
+.ov.on{display:flex}#frm>.acts{position:sticky;bottom:0;margin:14px 0 0;padding:12px 0;background:var(--panel);border-top:1px solid var(--line);z-index:3}details.docd,details.more{margin:10px 0;border:1px solid var(--line);border-radius:12px;padding:0 12px}details.docd>summary,details.more>summary{cursor:pointer;font-weight:700;padding:12px 0;list-style:none}details.docd[open]>summary,details.more[open]>summary{border-bottom:1px solid var(--line);margin-bottom:10px}details.docd .docb{padding-bottom:10px}
 .rbody{padding:12px;display:flex;flex-direction:column;gap:12px}.rbody .card{margin:0}.rbody h3{margin:0 0 10px}
 .pps{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pp{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:11px 12px;cursor:pointer;font:inherit;color:inherit;min-height:64px}.pp b{font-size:15px}.pp span{font-size:12.5px;color:var(--mute)}.pp.pri{grid-column:1/-1;background:#e8f2fa;border-color:#428ab8}.pp.warn{border-color:#e0a33a;background:#fff6e5}.pp.bad{border-color:#c5283d;background:#fdecee}
 body{padding-top:env(safe-area-inset-top)}body::before{content:'';position:fixed;left:0;right:0;top:0;height:env(safe-area-inset-top);background:var(--band,#0b1f4a);z-index:50}
@@ -185,7 +185,7 @@ body:has(#ov.on) #add{display:none}#add{position:fixed;right:16px;bottom:calc(76
 <body>
 <header class="band">
   <div class="top">
-    <div class="brand"><h1>MRC Properties</h1><small><span id="appv">v43 · 27 Nov 2026</span> · <button id="upd" type="button" class="hlink">⟳ Update</button></small></div>
+    <div class="brand"><h1>MRC Properties</h1><small><span id="appv">v44 · 27 Nov 2026</span> · <button id="upd" type="button" class="hlink">⟳ Update</button></small></div>
     <div class="hr"><div class="conn" id="conn"><i></i><span>Connecting…</span></div><button class="hlink" id="logout" hidden>Sign out</button></div>
   </div>
   <nav class="chips" id="chips" aria-label="Building"></nav>
@@ -1075,12 +1075,13 @@ function history(c,r){
   return'';
 }
 let cur=null;
+const MAINF={agreements:['no','tenant','unit','start','end','period','rent','sewaFee','wifiFee','discount','deposit','dueDay','closed']};
 function openForm(c,id,pre){
   const rec=id?by(c,id):null,r=rec?{...rec}:{...defaults(c),...(pre||{})};cur={c,id};
   const DB={agreements:[['agreement','Agreement paper'],['handover','Move-in form'],['paid','Rent paid'],['due','Due notice'],['unpaid','Unpaid statement'],['fine','Fine notice'],['warning','Warning notice'],['vnotice','Notice to vacate'],['warranty','Items & warranty card'],['corridor','Corridor & waste warning'],['vacate','Vacate & settlement']],payments:[['receipt','Receipt voucher']],invoices:[['invoice','Invoice']],tickets:[['emerg','Emergency maintenance notice']],cheques:[['chqrec','Cheque received receipt'],['bounce','Cheque return / bounced']],bills:[['pv','Payment voucher']]}[c];
-  $('#modal').innerHTML=`<h2>${rec?'Edit':'New'} ${SCH[c].t.toLowerCase()}</h2>${rec&&DB?`<div class="docb">${DB.map(([k,l])=>`<button type="button" class="btn ghost" data-doc="${k}" data-id="${rec.id}">${l}</button>`).join('')}</div>`:''}<form id="frm"><div class="grid">${SCH[c].f.map(f=>field(f,r)).join('')}</div>${c==='payments'?'<div id="payinfo" class="card" style="margin:10px 0;padding:10px 12px"></div>':''}
+  $('#modal').innerHTML=`<h2>${rec?'Edit':'New'} ${SCH[c].t.toLowerCase()}</h2>${rec&&DB?(DB.length>2?`<details class="docd"><summary>📄 Papers to send (${DB.length})</summary><div class="docb">${DB.map(([k,l])=>`<button type="button" class="btn ghost" data-doc="${k}" data-id="${rec.id}">${l}</button>`).join('')}</div></details>`:`<div class="docb">${DB.map(([k,l])=>`<button type="button" class="btn ghost" data-doc="${k}" data-id="${rec.id}">${l}</button>`).join('')}</div>`):''}<form id="frm">${(()=>{const MF=MAINF[c];if(!MF)return`<div class="grid">${SCH[c].f.map(f=>field(f,r)).join('')}</div>`;const A=SCH[c].f.filter(f=>MF.includes(f[0])),B=SCH[c].f.filter(f=>!MF.includes(f[0]));return`<div class="grid">${A.map(f=>field(f,r)).join('')}</div><details class="more"><summary>➕ More details (dates, move-in, vacate, notes)</summary><div class="grid">${B.map(f=>field(f,r)).join('')}</div></details>`})()}${c==='payments'?'<div id="payinfo" class="card" style="margin:10px 0;padding:10px 12px"></div>':''}
    <div class="acts">${rec?'<button type="button" class="btn del" id="del">Delete</button>':''}<span class="sp"></span><button type="button" class="btn ghost" id="cancel">Cancel</button><button class="btn" ${canWrite?'':'disabled'}>Save</button></div></form>${rec?history(c,rec):''}`;
-  $('#ov').classList.remove('doc');$('#ov').classList.add('on');$('#modal').querySelector('input:not([readonly]),select')?.focus();if(c==='payments')payInfo();
+  $('#ov').classList.remove('doc');$('#ov').classList.add('on');if(!matchMedia('(pointer:coarse)').matches)$('#modal').querySelector('input:not([readonly]),select')?.focus();if(c==='payments')payInfo();
 }
 function payInfo(){
   const box=$('#payinfo'),f=$('#frm');if(!box||!f)return;const a=by('agreements',f.agr.value),i=by('invoices',f.inv.value);
