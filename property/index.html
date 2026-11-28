@@ -65,7 +65,7 @@ a.kpi{text-decoration:none;color:inherit;display:block}.okc{color:#1f7a3d}
 tr.brow td:first-child{border-left:4px solid var(--bc)}
 .tdb{border-left:5px solid var(--tc)!important}.tdb h2{color:var(--tc)}.tdb h2 .cnt{background:var(--tc);color:#fff}
 .kpi[style*="--tc"]{border-top:4px solid var(--tc);background:color-mix(in srgb,var(--tc) 7%,var(--panel))}.kpi[style*="--tc"] span{color:var(--tc);font-weight:700}
-.kl{list-style:none;margin:0;padding:0}.kl li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:10px 4px;border-bottom:1px solid var(--line);cursor:pointer;align-items:center}.kl li .n{text-align:right;white-space:nowrap;font-weight:700}.kl li .sub{font-weight:400}.tkrow{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line)}.tkrow>div{flex:1;min-width:0;cursor:pointer}.kl li .sub .tag,.kl li .sub span{white-space:normal;display:inline;line-height:1.5}
+.kl{list-style:none;margin:0;padding:0}.kl li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:10px 4px;border-bottom:1px solid var(--line);cursor:pointer;align-items:center}.kl li .n{text-align:right;white-space:nowrap;font-weight:700}.kl li .sub{font-weight:400}input.flash{background:#dcfce7!important;transition:background .3s}.tkrow{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line)}.tkrow>div{flex:1;min-width:0;cursor:pointer}.kl li .sub .tag,.kl li .sub span{white-space:normal;display:inline;line-height:1.5}
 .kds.ok{background:#e8f5ec}.kds.warn{background:#fff6e0}.kds.bad{background:#fdeaee}
 .meter{height:8px;background:var(--soft);border-radius:4px;overflow:hidden;margin-top:6px}.meter i{display:block;height:100%;background:var(--ok)}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
@@ -187,7 +187,7 @@ body:has(#ov.on) #add{display:none}#add{position:fixed;right:16px;bottom:calc(76
 <body>
 <header class="band">
   <div class="top">
-    <div class="brand"><h1>MRC Properties</h1><small><span id="appv">v51 · 28 Nov 2026</span> · <button id="upd" type="button" class="hlink">⟳ Update</button></small></div>
+    <div class="brand"><h1>MRC Properties</h1><small><span id="appv">v52 · 28 Nov 2026</span> · <button id="upd" type="button" class="hlink">⟳ Update</button></small></div>
     <div class="hr"><div class="conn" id="conn"><i></i><span>Connecting…</span></div><button class="hlink" id="logout" hidden>Sign out</button></div>
   </div>
   <nav class="chips" id="chips" aria-label="Building"></nav>
@@ -1113,7 +1113,7 @@ function openForm(c,id,pre){
   const DB={agreements:[['agreement','Agreement paper'],['handover','Move-in form'],['paid','Rent paid'],['due','Due notice'],['unpaid','Unpaid statement'],['fine','Fine notice'],['warning','Warning notice'],['vnotice','Notice to vacate'],['warranty','Items & warranty card'],['corridor','Corridor & waste warning'],['vacate','Vacate & settlement']],payments:[['receipt','Receipt voucher']],invoices:[['invoice','Invoice']],tickets:[['emerg','Emergency maintenance notice']],cheques:[['chqrec','Cheque received receipt'],['bounce','Cheque return / bounced']],bills:[['pv','Payment voucher']]}[c];
   $('#modal').innerHTML=`<h2>${rec?'Edit':'New'} ${SCH[c].t.toLowerCase()}</h2>${rec&&DB?(DB.length>2?`<details class="docd"><summary>📄 Papers to send (${DB.length})</summary><div class="docb">${DB.map(([k,l])=>`<button type="button" class="btn ghost" data-doc="${k}" data-id="${rec.id}">${l}</button>`).join('')}</div></details>`:`<div class="docb">${DB.map(([k,l])=>`<button type="button" class="btn ghost" data-doc="${k}" data-id="${rec.id}">${l}</button>`).join('')}</div>`):''}<form id="frm">${(()=>{const MF=MAINF[c];if(!MF)return`<div class="grid">${SCH[c].f.map(f=>field(f,r)).join('')}</div>`;const A=SCH[c].f.filter(f=>MF.includes(f[0])),B=SCH[c].f.filter(f=>!MF.includes(f[0]));return`<div class="grid">${A.map(f=>field(f,r)).join('')}</div><details class="more"><summary>➕ More details (dates, move-in, vacate, notes)</summary><div class="grid">${B.map(f=>field(f,r)).join('')}</div></details>`})()}${c==='payments'?'<div id="payinfo" class="card" style="margin:10px 0;padding:10px 12px"></div>':''}
    <div class="acts">${rec?'<button type="button" class="btn del" id="del">Delete</button>':''}<span class="sp"></span><button type="button" class="btn ghost" id="cancel">Cancel</button><button class="btn" ${canWrite?'':'disabled'}>Save</button></div></form>${rec?history(c,rec):''}`;
-  $('#ov').classList.remove('doc');$('#ov').classList.add('on');if(!matchMedia('(pointer:coarse)').matches)$('#modal').querySelector('input:not([readonly]),select')?.focus();if(c==='payments')payInfo();
+  $('#ov').classList.remove('doc');$('#ov').classList.add('on');if(!matchMedia('(pointer:coarse)').matches)$('#modal').querySelector('input:not([readonly]),select')?.focus();if(c==='agreements')agTot();if(c==='payments')payInfo();
 }
 function payInfo(){
   const box=$('#payinfo'),f=$('#frm');if(!box||!f)return;const a=by('agreements',f.agr.value),i=by('invoices',f.inv.value);
@@ -1186,7 +1186,13 @@ document.addEventListener('click',e=>{
   else if(el=g('#del')){if(el.dataset.sure){const {c,id}=cur;write({op:'del',c,id},'Deleted')}else{el.dataset.sure=1;el.textContent='Tap again – moves to Recycle bin'}}
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&cur)close()});
-document.addEventListener('input',e=>{if(cur?.c==='payments'&&e.target.name==='paid')payInfo()});
+document.addEventListener('input',e=>{if(cur?.c==='payments'&&e.target.name==='paid')payInfo();
+  const f=$('#frm');if(!f||!cur)return;const v=k=>+(f[k]?.value||0);
+  if(cur.c==='invoices'&&['rent','sewa','wifi','ew','disc'].includes(e.target.name)&&f.amount){const t=v('rent')+v('sewa')+v('wifi')+v('ew')-v('disc');f.amount.value=Math.round(t*100)/100;f.amount.classList.add('flash');setTimeout(()=>f.amount.classList.remove('flash'),400)}
+  if(cur.c==='agreements'&&['rent','sewaFee','wifiFee','discount','period'].includes(e.target.name))agTot()});
+const fdT=x=>fd(x);
+function agTot(){const f=$('#frm');if(!f||!f.rent)return;let el=$('#agtot');if(!el){el=document.createElement('div');el.id='agtot';el.className='card';el.style.cssText='margin:6px 0;padding:10px 12px;font-weight:700';(f.wifiFee?.closest('label,.fld,div')||f.rent.closest('label,.fld,div')).after(el)}
+  const v=k=>+(f[k]?.value||0),t=v('rent')+v('sewaFee')+v('wifiFee')-v('discount');el.innerHTML=`Monthly total: AED ${fmt2(t)} <span class="sub">= rent ${fmt(v('rent'))} + SEWA ${fmt(v('sewaFee'))} + WiFi ${fmt(v('wifiFee'))}${v('discount')?' − discount '+fmt(v('discount')):''}</span>`}
 document.addEventListener('change',e=>{
   if(!cur)return;const f=$('#frm');if(!f)return;
   if(cur.c==='payments'&&e.target.name==='inv'){const i=by('invoices',e.target.value);if(i){f.agr.value=i.agr;if(!f.paid.value)f.paid.value=IS[i.id]?.bal??i.amount}}
@@ -1210,7 +1216,9 @@ document.addEventListener('submit',e=>{
     if(o.status==='Cleared'&&!o.pay&&(o.purpose||'Rent')==='Rent'){const pid=newId();o.pay=pid;write({op:'set',c:'payments',id:pid,data:{rno:nextId('payments','rno','R-'),date:o.chqDate,agr:o.agr,paid:o.amount,method:'Cheque',chq:o.chq,bank:o.bank,chqDate:o.chqDate,chqStatus:'Cleared',notes:'From cheque register',updatedAt:o.updatedAt}},'Receipt created')}
     else if(o.pay&&by('payments',o.pay)){const pp=by('payments',o.pay);if(o.status==='Bounced'){write({op:'del',c:'payments',id:o.pay},'Receipt cancelled – cheque bounced');o.pay=''}else{const {id:_,...rest}=pp;write({op:'set',c:'payments',id:o.pay,data:{...rest,paid:o.amount,chq:o.chq,bank:o.bank,chqDate:o.chqDate}})}}}
   if(c==='invoices'&&!id&&(o.kind||'Rent')==='Rent'){const dup=S.invoices.find(i=>i.agr===o.agr&&(i.kind||'Rent')==='Rent'&&((o.dueDate&&i.dueDate===o.dueDate)||(o.from&&i.from===o.from)));if(dup&&!confirm('This tenant already has rent invoice '+dup.ino+' (AED '+fmt(dup.amount)+') for '+fd(dup.from||dup.dueDate)+'.\n\nTap Cancel and use ✏️ to change that one, or OK to add a second invoice anyway.'))return}
-  const nid=id||newId();write({op:'set',c,id:nid,data:o},'Saved');
+  const old=id?by(c,id):null;const nid=id||newId();write({op:'set',c,id:nid,data:o},'Saved');
+  if(c==='agreements'&&old&&['rent','sewaFee','wifiFee','discount'].some(k=>(+old[k]||0)!==(+o[k]||0))){const op=S.invoices.filter(i=>i.agr===nid&&(i.kind||'Rent')==='Rent'&&IS[i.id]&&IS[i.id].bal>0.005&&(i.dueDate||'')>=uaeToday().slice(0,7)+'-01');
+    op.forEach(i=>{const t=(+o.rent||0)+(+o.sewaFee||0)+(+o.wifiFee||0)-(+o.discount||0)+(+i.ew||0);if(confirm('Rent changed. Update unpaid invoice '+(i.ino||'')+' ('+fdT(i.dueDate)+') from AED '+fmt(i.amount)+' to AED '+fmt(t)+'?')){const {id:_,...rest}=i;write({op:'set',c:'invoices',id:i.id,data:{...rest,rent:+o.rent||0,sewa:+o.sewaFee||0,wifi:+o.wifiFee||0,disc:+o.discount||0,amount:Math.round(t*100)/100}},'Invoice '+(i.ino||'')+' updated')}})}
   // new rent payment: open its receipt straight away so it can be sent to the tenant in one tap
   if(c==='invoices'&&!id&&canWrite&&by('invoices',nid)){openDoc('invoice',nid);toast('Invoice saved – tap 📄 Send PDF on WhatsApp')}
   if(c==='payments'&&!id&&canWrite&&by('payments',nid)){openDoc('receipt',nid);
