@@ -186,7 +186,7 @@ body:has(#ov.on) #add{display:none}#add{position:fixed;right:16px;bottom:calc(76
 <body>
 <header class="band">
   <div class="top">
-    <div class="brand"><h1>MRC Properties</h1><small><span id="appv">v45 · 28 Nov 2026</span> · <button id="upd" type="button" class="hlink">⟳ Update</button></small></div>
+    <div class="brand"><h1>MRC Properties</h1><small><span id="appv">v46 · 28 Nov 2026</span> · <button id="upd" type="button" class="hlink">⟳ Update</button></small></div>
     <div class="hr"><div class="conn" id="conn"><i></i><span>Connecting…</span></div><button class="hlink" id="logout" hidden>Sign out</button></div>
   </div>
   <nav class="chips" id="chips" aria-label="Building"></nav>
@@ -717,9 +717,9 @@ function homeView(){
   const tile=(attr,col,ico,name,lines,img)=>`<button class="htile" ${attr} style="--hc:${col}">${img||''}<span class="hi">${ico}</span><b>${name}</b>${lines.map(l=>`<span class="hl">${l}</span>`).join('')}<span class="hgo">›</span></button>`;
   return`<div class="hgrid">${bs.map(b=>{const x=stats(b.id),tk=S.tickets.filter(k=>k.status!=='Done'&&by('units',k.unit)?.bld===b.id).length;
       return tile(`data-hub="${b.id}"`,bcol(b.id),'🏢',esc(b.name),[`${x.occ}/${x.n} rooms let${x.vac?' · '+x.vac+' empty':''}`,x.bal?`<em class="bad">Pending AED ${fmt(x.bal)}</em>`:'<em class="okt">No rent pending</em>',...(tk?[`🛠 ${tk} open`]:[])],bimg(b.id))}).join('')}
-    ${tile('data-gotab="accounts"','#4f46e5','💼','Accounts',['Income · expenses · bank balance','Each building separately'])}
-    ${tile('data-gotab="maint"','#f59e0b','🛠','Maintenance',[openT?`<em class="bad">${openT} open jobs</em>`:'<em class="okt">Nothing open</em>','Complaints & repairs'])}
-    ${tile('data-gotab="important"','#dc2626','⭐','Important today',[pendAll?`<em class="bad">Pending AED ${fmt(pendAll)}</em>`:'<em class="okt">Nothing pending</em>','Collect today · coming · cheques'])}
+    ${(()=>{const A=stats('all');return tile('data-gotab="accounts"','#4f46e5','💼','Accounts',[`Received this month AED ${fmt(A.col)}`,`Expenses this month AED ${fmt(A.util+A.ex)}`,A.bal?`<em class="bad">Pending AED ${fmt(A.bal)}</em>`:'<em class="okt">No rent pending</em>'],tileImg('accounts'))})()}
+    ${tile('data-gotab="maint"','#f59e0b','🛠','Maintenance',[openT?`<em class="bad">${openT} open jobs</em>`:'<em class="okt">Nothing open</em>','Complaints & repairs'],tileImg('maintenance'))}
+    ${tile('data-gotab="important"','#dc2626','⭐','Important today',[pendAll?`<em class="bad">Pending AED ${fmt(pendAll)}</em>`:'<em class="okt">Nothing pending</em>','Collect today · coming · cheques'],tileImg('important'))}
   </div>`}
 function corrCard(bid){const b=by('buildings',bid)||{},L=S.bills.filter(x=>x.bld===bid&&isCorr(x)).sort((p,q)=>(q.date||'').localeCompare(p.date||'')),mo=uaeToday().slice(0,7),cur=L.filter(x=>(x.date||'').startsWith(mo)),un=L.filter(x=>x.status!=='Paid'),unT=un.reduce((s,x)=>s+(+x.amount||0),0);
   const st=cur.length?(cur.every(x=>x.status==='Paid')?tag('This month paid','ok'):tag('This month unpaid · AED '+fmt(cur.filter(x=>x.status!=='Paid').reduce((s,x)=>s+(+x.amount||0),0)),'bad')):tag('This month not added yet','warn');
@@ -727,6 +727,7 @@ function corrCard(bid){const b=by('buildings',bid)||{},L=S.bills.filter(x=>x.bld
 function trashView(){const L=[...S.trash].sort((a,b)=>(b.at||'').localeCompare(a.at||''));
   return`<div class="card"><h2>🗑 Recycle bin <span class="sub">(${L.length})</span></h2><p class="sub">Everything you delete comes here first. Tap <b>Restore</b> to bring it back.</p>${L.length?`<table class="stack"><tbody>${L.map(t=>`<tr><td><b>${esc(TRL[t.c]||t.c)}</b> · ${esc(t.lab||'')}<div class="sub">${t.where?esc(t.where)+' · ':''}deleted ${fd((t.at||'').slice(0,10))} ${esc((t.at||'').slice(11,16))}</div></td><td class="n"><button class="btn mini" data-restore="${t.id}">↩ Restore</button> <button class="btn ghost mini" data-purge="${t.id}">Delete forever</button></td></tr>`).join('')}</tbody></table>`:'<p class="sub">Recycle bin is empty.</p>'}${L.length?`<div class="acts"><button class="btn ghost mini" data-purge="__all">Empty recycle bin</button></div>`:''}</div>`}
 const BIMG={'b-raw2':'files/buildings/b-raw2.jpg','b-ham1':'files/buildings/b-ham1.jpg','b-nak2':'files/buildings/b-nak2.jpg','b-rum2':'files/buildings/b-rum2.jpg'};
+function tileImg(n){return`<img class="bimg" src="files/tiles/${n}.svg" alt="" loading="lazy">`}
 function bimg(id){return BIMG[id]?`<img class="bimg" src="${BIMG[id]}" alt="" loading="lazy">`:''}
 function hubView(bid){const b=by('buildings',bid)||{},x=stats(bid),c=bcol(bid);
   const n=(f)=>f.length,ag=S.agreements.filter(a=>abld(a)===bid&&live(a)),tk=S.tickets.filter(k=>k.status!=='Done'&&by('units',k.unit)?.bld===bid);
